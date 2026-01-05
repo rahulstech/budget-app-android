@@ -7,13 +7,17 @@
     <string name="label_budget_categories">Categories</string>
     <string name="label_budget_category_name">Name</string>
     <string name="label_budget_category_note">Note</string>
-    <string name="label_budget_category_allocation">Allocate</string>
+    <string name="label_allocation">Allocation</string>
+    <string name="label_expense">Expense</string>
+    <string name="label_total_allocation">Total Allocation</string>
+    <string name="label_total_expense">Total Expense</string>
 
     <string name="label_create_budget">Create Budget</string>
     <string name="label_add">Add</string>
     <string name="label_cancel">Cancel</string>
     <string name="label_save">Save</string>
     <string name="label_ok">OK</string>
+    <string name="label_add_expense">Add Expense</string>
 
     <string name="title_budget_list">My Budgets</string>
     <string name="title_new_budget">New Budget</string>
@@ -23,6 +27,7 @@
     <string name="message_edit_category">edit %1$s</string>
     <string name="message_budget_category_note_clear_button">clear category note</string>
     <string name="message_budget_details_clear_button">clear budget details</string>
+    <string name="message_show_budget_details">show budget details</string>
 
     <string name="message_budget_save_success">Budget saved</string>
     <string name="message_budget_save_error">Budget not saved for some error</string>

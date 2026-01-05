@@ -440,7 +440,7 @@ fun CategoryDialog(initialCategory: BudgetCategoryParcelable? = null,
                     OutlinedTextField(
                         value = allocation,
                         onValueChange = { allocation = it },
-                        label = { Text(text = stringResource(R.string.label_budget_category_allocation)) },
+                        label = { Text(text = stringResource(R.string.label_allocation)) },
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(
                             keyboardType = KeyboardType.Number

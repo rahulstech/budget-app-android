@@ -3,7 +3,6 @@ package rahulstech.android.budgetapp.repository.impl
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.withContext
 import rahulstech.android.budgetapp.repository.BudgetRepository
@@ -14,7 +13,43 @@ import java.util.UUID
 
 internal class BudgetRepositoryMemoryImpl: BudgetRepository {
 
-    private val budgets = mutableMapOf<String, Budget>()
+    private val budgets = mutableMapOf(
+        "1" to Budget(
+            id = "1",
+            name = "Budget 1",
+            details = "This is the details of Budget 1",
+            totalAllocation = 16500.0,
+            totalExpense = 11900.0,
+            categories = listOf(
+                BudgetCategory(
+                    id = "1",
+                    budgetId = "1",
+                    name = "Category 1.1",
+                    note = "The is a short note of Category 1.1",
+                    allocation = 2500.0,
+                    totalExpense = 1100.0
+                ),
+
+                BudgetCategory(
+                    id = "2",
+                    budgetId = "1",
+                    name = "Category 1.2",
+                    note = "The is a short note of Category 1.2",
+                    allocation = 5000.0,
+                    totalExpense = 3800.0
+                ),
+
+                BudgetCategory(
+                    id = "3",
+                    budgetId = "1",
+                    name = "Category 1.1",
+                    note = "The is a short note of Category 1.1",
+                    allocation = 9000.0,
+                    totalExpense = 7000.0
+                ),
+            )
+        )
+    )
 
     private val budgetsState = MutableStateFlow<List<Budget>>(emptyList())
 
@@ -31,6 +66,10 @@ internal class BudgetRepositoryMemoryImpl: BudgetRepository {
     }
 
 
+    init {
+        updateBudgetsState()
+    }
+
     override suspend fun createBudget(budget: Budget): Budget = withContext(Dispatchers.IO) {
         val totalAllocation = budget.categories.sumOf { it.allocation }
         val copy = budget.copy(id = UUID.randomUUID().toString(), totalAllocation = totalAllocation)
@@ -39,7 +78,7 @@ internal class BudgetRepositoryMemoryImpl: BudgetRepository {
         copy
     }
 
-    override fun observeBudgetById(id: String): Flow<Budget?> = emptyFlow()
+    override fun observeBudgetById(id: String): Flow<Budget?> = flowOf(budgets[id])
 
     override fun observeAllBudgets(): Flow<List<Budget>> = budgetsState
 

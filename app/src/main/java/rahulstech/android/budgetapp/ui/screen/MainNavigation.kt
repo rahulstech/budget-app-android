@@ -1,5 +1,6 @@
 package rahulstech.android.budgetapp.ui.screen
 
+import android.os.Bundle
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
@@ -18,6 +19,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.core.os.bundleOf
 import androidx.navigation.NavController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -41,24 +43,32 @@ enum class Screen(val route: String) {
 
     ;
 
-    fun create(args: Map<String,Any?>? = null): String = route
+    fun create(arguments: Bundle? = null): String  {
+        val args = arguments ?: bundleOf()
+        return when(this) {
+            ViewBudget -> "budgets/${args.getString("budgetId")}"
+            else -> route
+        }
+    }
 }
 
-typealias NavigateToCallback = (Screen,Map<String,Any?>?)-> Unit
+typealias NavigateToCallback = (Screen, Bundle?)-> Unit
 
 fun handleNavigateTo(navController: NavController,
                      screen: Screen,
-                     args: Map<String,Any?>? = null)
+                     args: Bundle? = null)
 {
     val route = screen.create(args)
     navController.navigate(route)
 }
 
-typealias ExitScreenCallback = (result: Map<String,Any?>?, popUpTo: Screen?)-> Unit
+typealias ExitScreenCallback = (Bundle?,Screen?)-> Unit
 
 fun handleExitScreen(navController: NavController,
-                    results: Map<String, Any?>? = null,
-                    popUpTo: Screen? = null) {
+                     popUpTo: Screen? = null,
+                     results: Bundle? = null,
+                     )
+{
     // TODO: implement handleExitScreen
     navController.popBackStack()
 }
@@ -158,7 +168,7 @@ fun MainNavigation() {
                 CreateBudgetRoute(
                     snackBarCallback = snackBarCallback,
                     exitScreen = { results, popUpTo ->
-                        handleExitScreen(navController, results, popUpTo)
+                        handleExitScreen(navController = navController, popUpTo = popUpTo, results = results)
                     }
                 )
             }
@@ -172,7 +182,12 @@ fun MainNavigation() {
                 )
             ) { backStackEntry ->
                 val budgetId = backStackEntry.arguments?.getString("budgetId") ?: return@composable
-                ViewBudgetRoute(budgetId)
+                ViewBudgetRoute(
+                    budgetId = budgetId, snackBarCallback = snackBarCallback,
+                    exitScreenCallback = { results, popUpTo ->
+                        handleExitScreen(navController = navController, popUpTo = popUpTo, results = results)
+                    }
+                )
             }
         }
     }

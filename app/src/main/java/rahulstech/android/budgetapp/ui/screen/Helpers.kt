@@ -8,7 +8,7 @@ sealed class UIState<out T>{
 
     data class Success<T>(val data: T): UIState<T>()
 
-    data class NotFound<T>(val what: T): UIState<T>()
+    class NotFound(): UIState<Nothing>()
 
     data class Error(val cause: Throwable? = null): UIState<Nothing>()
 }

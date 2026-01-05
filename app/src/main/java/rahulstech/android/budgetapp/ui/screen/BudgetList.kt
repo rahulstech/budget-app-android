@@ -4,10 +4,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -22,25 +20,18 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FabPosition
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.core.os.bundleOf
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -49,9 +40,7 @@ import kotlinx.coroutines.flow.Flow
 import rahulstech.android.budgetapp.R
 import rahulstech.android.budgetapp.repository.BudgetRepository
 import rahulstech.android.budgetapp.repository.model.Budget
-import rahulstech.android.budgetapp.ui.theme.ColorProgressDanger
-import rahulstech.android.budgetapp.ui.theme.ColorProgressSafe
-import rahulstech.android.budgetapp.ui.theme.ColorProgressWarning
+import rahulstech.android.budgetapp.ui.widget.ExpenseLinearProgress
 import javax.inject.Inject
 
 @HiltViewModel
@@ -69,7 +58,7 @@ fun BudgetListRoute(navigateTo: NavigateToCallback,
     val budgets by viewModel.allBudgets.collectAsStateWithLifecycle(emptyList())
     BudgetListScreen(
         budgets = budgets,
-        onClickBudget = { navigateTo(Screen.ViewBudget, buildMap { "id" to it.id }) },
+        onClickBudget = { navigateTo(Screen.ViewBudget, bundleOf ( "budgetId" to it.id )) },
         onClickCreateBudget = { navigateTo(Screen.CreateBudget, null) }
     )
 }
@@ -129,19 +118,11 @@ fun BudgetListScreen(
 
 }
 
-
 @Composable
 fun BudgetListItem(
     budget: Budget,
     onClickBudget: (Budget) -> Unit = {}
 ) {
-    val progress = (budget.totalExpense / budget.totalAllocation).coerceIn(0.0, 1.0)
-    val progressColor = when {
-        progress < 0.5 -> ColorProgressSafe
-        progress < 0.9 -> ColorProgressWarning
-        else -> ColorProgressDanger
-    }
-
     Card(
         modifier = Modifier.fillMaxWidth()
             .clickable { onClickBudget(budget) },
@@ -164,48 +145,12 @@ fun BudgetListItem(
                 maxLines = 1,
             )
 
-            // Progress bar
-            LinearProgressIndicator(
-                progress = { progress.toFloat() },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(6.dp),
-                color = progressColor,
-                strokeCap = StrokeCap.Round
+            ExpenseLinearProgress(
+                expense = budget.totalExpense,
+                allocation = budget.totalAllocation,
+                labelExpense = stringResource(R.string.label_expense),
+                labelAllocation = stringResource(R.string.label_allocation)
             )
-
-            // Bottom row
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Expense",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-
-                // TODO: apply number format and currency symbol
-                Text(
-                    text = buildAnnotatedString {
-                        withStyle(
-                            SpanStyle(
-                                color = progressColor,
-                            )
-                        ) {
-                            append(budget.totalExpense.toInt().toString())
-                        }
-                        append(" / ")
-                        append(budget.totalAllocation.toInt().toString())
-                    },
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.W600,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    overflow = TextOverflow.Ellipsis,
-                    maxLines = 1,
-                )
-            }
         }
     }
 }

@@ -2,9 +2,12 @@ package rahulstech.android.budgetapp.ui.screen
 
 import android.os.Parcelable
 import kotlinx.parcelize.Parcelize
+import rahulstech.android.budgetapp.repository.model.Budget
 import rahulstech.android.budgetapp.repository.model.BudgetCategory
 import java.util.UUID
 
+fun Budget.calculateExpenseProgress(): Float =
+    (totalExpense / totalAllocation).coerceIn(0.0,1.0).toFloat()
 
 @Parcelize
 data class BudgetCategoryParcelable(
@@ -25,3 +28,6 @@ data class BudgetCategoryParcelable(
             allocation = allocation
         )
 }
+
+fun BudgetCategory.calculateExpenseProgress(): Float =
+    (totalExpense / allocation).coerceIn(0.0, 1.0).toFloat()
