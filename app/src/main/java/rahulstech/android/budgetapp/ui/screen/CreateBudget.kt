@@ -21,19 +21,20 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -63,6 +64,7 @@ import kotlinx.coroutines.launch
 import rahulstech.android.budgetapp.R
 import rahulstech.android.budgetapp.repository.BudgetRepository
 import rahulstech.android.budgetapp.repository.model.Budget
+import rahulstech.android.budgetapp.ui.components.CategoryDialog
 import rahulstech.android.budgetapp.ui.theme.BudgetAppTheme
 import javax.inject.Inject
 
@@ -198,7 +200,7 @@ fun CreateBudgetScreen(onClickSaveBudget: (Budget)-> Unit) {
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Clear,
-                                contentDescription = stringResource(R.string.message_budget_details_clear_button)
+                                contentDescription = stringResource(R.string.message_clear_text)
                             )
                         }
                     }
@@ -276,13 +278,13 @@ fun CategoriesSection(categories: List<BudgetCategoryParcelable>,
 
     if (showCategoryDialog) {
         CategoryDialog(
-            initialCategory = editCategory,
+            initialCategory = editCategory?.toBudgetCategory(),
             onClickSave = {
                 if (null == editCategory) {
-                    onSaveCategory(it, false)
+                    onSaveCategory(it.toBudgetCategoryParcel(), false)
                 }
                 else {
-                    onSaveCategory(it.copy(key = editCategory!!.key), true)
+                    onSaveCategory(it.toBudgetCategoryParcel(key = editCategory!!.key), true)
                 }
                 showCategoryDialog = false
             },
@@ -357,129 +359,6 @@ fun CategoryItem(category: BudgetCategoryParcelable,
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun CategoryDialog(initialCategory: BudgetCategoryParcelable? = null,
-                   onClickSave: (BudgetCategoryParcelable)-> Unit,
-                   onDismiss: ()-> Unit)
-{
-    var name by rememberSaveable { mutableStateOf(initialCategory?.name ?: "") }
-    var note by rememberSaveable { mutableStateOf(initialCategory?.note ?: "") }
-    var allocation by rememberSaveable { mutableStateOf(initialCategory?.allocation?.toString() ?: "") }
-
-    BasicAlertDialog (
-        onDismissRequest = onDismiss,
-    ) {
-        Card(
-            modifier = Modifier.width(380.dp),
-            shape = RoundedCornerShape(size = 12.dp),
-        ) {
-
-            Column(
-                modifier = Modifier.padding(16.dp),
-            ) {
-                // dialog title
-                Text(
-                    modifier = Modifier.fillMaxWidth(),
-                    text = stringResource(R.string.title_new_budget_category),
-                    style = MaterialTheme.typography.titleMedium,
-                    textAlign = TextAlign.Center
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // dialog content
-                Column(
-                    modifier = Modifier.fillMaxWidth()
-                        .wrapContentHeight()
-                        .verticalScroll(rememberScrollState()),
-                ) {
-                    OutlinedTextField(
-                        value = name,
-                        onValueChange = { name = it },
-                        label = { Text(text = stringResource(R.string.label_budget_category_name)) },
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(
-                            capitalization = KeyboardCapitalization.Words,
-                            keyboardType = KeyboardType.Text
-                        ),
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    // category note
-                    OutlinedTextField(
-                        value = note,
-                        onValueChange = { note = it },
-                        label = { Text(text = stringResource(R.string.label_budget_category_note)) },
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(
-                            capitalization = KeyboardCapitalization.Sentences,
-                            keyboardType = KeyboardType.Text,
-                        ),
-                        trailingIcon = {
-                            if (note.isNotEmpty()) {
-                                IconButton(
-                                    modifier = Modifier.focusable(false),
-                                    onClick = { note = "" },
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Clear,
-                                        contentDescription = stringResource(R.string.message_budget_category_note_clear_button)
-                                    )
-                                }
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    // category allocation
-                    OutlinedTextField(
-                        value = allocation,
-                        onValueChange = { allocation = it },
-                        label = { Text(text = stringResource(R.string.label_allocation)) },
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = KeyboardType.Number
-                        ),
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(20.dp))
-
-                // dialog buttons
-                Row(
-                    modifier = Modifier.fillMaxWidth()
-                        .wrapContentHeight(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.End,
-                ) {
-                    TextButton(onClick = { onDismiss() }) {
-                        Text(text = stringResource(R.string.label_cancel))
-                    }
-
-                    TextButton(
-                        enabled = name.isNotBlank(),
-                        onClick = {
-                            val category = BudgetCategoryParcelable(
-                                name = name,
-                                note = note,
-                                allocation = allocation.toDoubleOrNull() ?: 0.0
-                            )
-                            onClickSave(category)
-                        }) {
-                        Text(text = stringResource(R.string.label_save))
-                    }
-                }
-            }
-
-        }
-    }
-}
 
 
 @Preview(

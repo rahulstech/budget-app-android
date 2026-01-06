@@ -1,5 +1,6 @@
 package rahulstech.android.budgetapp.repository.impl
 
+import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -35,8 +36,17 @@ internal class BudgetRepositoryMemoryImpl: BudgetRepository {
 
     private val budgetsState = MutableStateFlow<List<Budget>>(emptyList())
 
+    private var budgetId: String = ""
+    private val budgetState = MutableStateFlow<Budget?>(null)
+
     private fun updateBudgetsState() {
+        Log.i("BudgetRepositoryMemoryImpl", "updateBudgetsState")
         budgetsState.value = budgets.values.toList()
+        updateBudgetState()
+    }
+
+    private fun updateBudgetState() {
+        budgetState.value = budgets[budgetId]
     }
 
 
@@ -56,22 +66,63 @@ internal class BudgetRepositoryMemoryImpl: BudgetRepository {
         copy
     }
 
-    override fun observeBudgetById(id: String): Flow<Budget?> = flowOf(budgets[id])
+    override fun observeBudgetById(id: String): Flow<Budget?> {
+        budgetId = id
+        updateBudgetState()
+        return budgetState
+    }
 
     override fun observeAllBudgets(): Flow<List<Budget>> = budgetsState
 
-    override suspend fun editBudget(budget: Budget): Budget? = budget.copy()
+    override suspend fun editBudget(budget: Budget): Budget? = withContext(Dispatchers.IO) {
+        budgets[budget.id]?.let { original ->
+            val copy = original.copy(
+                name = budget.name,
+                details = budget.details
+            )
+            budgets[budget.id] = copy
+            updateBudgetsState()
+            copy
+        }
+    }
 
     override suspend fun removeBudget(budget: Budget) {}
 
-    override suspend fun addCategory(category: BudgetCategory): BudgetCategory = category.copy(id = UUID.randomUUID().toString())
+    override suspend fun addCategory(category: BudgetCategory): BudgetCategory = withContext(Dispatchers.IO) {
+        budgets[category.budgetId]?.let { budget ->
+            val copy = category.copy(id = UUID.randomUUID().toString())
+            budgets[budget.id] = budget.copy(
+                totalAllocation = budget.totalAllocation + copy.allocation,
+                categories = budget.categories + copy
+            )
+            updateBudgetsState()
+            copy
+        } ?: throw Exception()
+    }
 
     override suspend fun editCategory(category: BudgetCategory): BudgetCategory? = category
 
-    override suspend fun removeCategory(category: BudgetCategory) {
-    }
+    override suspend fun removeCategory(category: BudgetCategory) {}
 
-    override suspend fun addExpense(expense: Expense): Expense = expense.copy(id = UUID.randomUUID().toString())
+    override suspend fun addExpense(expense: Expense): Expense = withContext(Dispatchers.IO) {
+        val budgetId = expense.budgetId
+        val categoryId = expense.categoryId
+        // get budget and category; if not found then nothing to save
+        budgets[budgetId]?.let { budget ->
+            val categories = budget.categories.toMutableList()
+            val categoryIndex = categories.indexOfFirst { it.id == categoryId }
+            if (categoryIndex < 0) return@let null
+            val copy = expense.copy(id = UUID.randomUUID().toString())
+            val category = categories[categoryIndex]
+            categories[categoryIndex] = category.copy(totalExpense = category.totalExpense + expense.amount)
+            budgets[budgetId] = budget.copy(
+                totalExpense = budget.totalExpense + expense.amount,
+                categories = categories.toList()
+            )
+            updateBudgetsState()
+            copy
+        } ?: throw Exception()
+    }
 
     override fun observeExpenseForCategory(categoryId: String): Flow<List<Expense>> = flowOf(emptyList())
 

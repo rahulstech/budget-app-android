@@ -40,7 +40,7 @@ import kotlinx.coroutines.flow.Flow
 import rahulstech.android.budgetapp.R
 import rahulstech.android.budgetapp.repository.BudgetRepository
 import rahulstech.android.budgetapp.repository.model.Budget
-import rahulstech.android.budgetapp.ui.widget.ExpenseLinearProgress
+import rahulstech.android.budgetapp.ui.components.ExpenseLinearProgress
 import javax.inject.Inject
 
 @HiltViewModel
