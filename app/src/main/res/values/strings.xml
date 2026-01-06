@@ -28,7 +28,9 @@
     <string name="message_budget_category_note_clear_button">clear category note</string>
     <string name="message_budget_details_clear_button">clear budget details</string>
     <string name="message_show_budget_details">show budget details</string>
+    <string name="message_edit_budget">edit budget</string>
 
     <string name="message_budget_save_success">Budget saved</string>
     <string name="message_budget_save_error">Budget not saved for some error</string>
+    <string name="message_observe_budget_error">Can not load budget</string>
 </resources>

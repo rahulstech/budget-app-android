@@ -71,6 +71,7 @@ fun BudgetListScreen(
     onClickCreateBudget: ()-> Unit,
 ) {
     Scaffold(
+        // TODO: set container color
         topBar = {
             TopAppBar(
                 title = {

@@ -2,6 +2,7 @@ package rahulstech.android.budgetapp.ui.screen
 
 import android.os.Bundle
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.MaterialTheme
@@ -126,17 +127,21 @@ fun RouteContent(content: @Composable (SnackBarCallback)-> Unit) {
         },
     ) { innerPadding ->
         Box(
-            modifier = Modifier.padding(innerPadding)
-                .widthIn(max = 800.dp),
-            contentAlignment = Alignment.Center,
+            modifier = Modifier.fillMaxSize().padding(innerPadding),
+            contentAlignment = Alignment.TopCenter
         ) {
-           content(
-               { snackBarEvent ->
-                   coroutineScope.launch {
-                       snackBarHostState.showSnackbar(snackBarEvent)
-                   }
-               },
-           )
+            Box(
+                modifier = Modifier.widthIn(max = 800.dp),
+                contentAlignment = Alignment.TopCenter,
+            ) {
+                content(
+                    { snackBarEvent ->
+                        coroutineScope.launch {
+                            snackBarHostState.showSnackbar(snackBarEvent)
+                        }
+                    },
+                )
+            }
         }
     }
 }
@@ -183,7 +188,11 @@ fun MainNavigation() {
             ) { backStackEntry ->
                 val budgetId = backStackEntry.arguments?.getString("budgetId") ?: return@composable
                 ViewBudgetRoute(
-                    budgetId = budgetId, snackBarCallback = snackBarCallback,
+                    budgetId = budgetId,
+                    snackBarCallback = snackBarCallback,
+                    navigateToCallback = { screen, args ->
+                        handleNavigateTo(navController, screen, args)
+                    },
                     exitScreenCallback = { results, popUpTo ->
                         handleExitScreen(navController = navController, popUpTo = popUpTo, results = results)
                     }

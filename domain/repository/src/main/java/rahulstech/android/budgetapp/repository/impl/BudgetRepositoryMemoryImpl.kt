@@ -18,51 +18,25 @@ internal class BudgetRepositoryMemoryImpl: BudgetRepository {
             id = "1",
             name = "Budget 1",
             details = "This is the details of Budget 1",
-            totalAllocation = 16500.0,
-            totalExpense = 11900.0,
-            categories = listOf(
+            totalExpense = 12000.0,
+            totalAllocation = 20000.0,
+            categories = (1..10).map { item ->
                 BudgetCategory(
-                    id = "1",
+                    id = "$item",
                     budgetId = "1",
-                    name = "Category 1.1",
-                    note = "The is a short note of Category 1.1",
-                    allocation = 2500.0,
-                    totalExpense = 1100.0
-                ),
-
-                BudgetCategory(
-                    id = "2",
-                    budgetId = "1",
-                    name = "Category 1.2",
-                    note = "The is a short note of Category 1.2",
-                    allocation = 5000.0,
-                    totalExpense = 3800.0
-                ),
-
-                BudgetCategory(
-                    id = "3",
-                    budgetId = "1",
-                    name = "Category 1.1",
-                    note = "The is a short note of Category 1.1",
-                    allocation = 9000.0,
-                    totalExpense = 7000.0
-                ),
-            )
+                    name = "Category 1.${item}",
+                    note = "The is a short note of Category 1.${item}",
+                    allocation = (1000..10000).random().toDouble(),
+                    totalExpense = (1000..10000).random().toDouble()
+                )
+            }
         )
     )
 
     private val budgetsState = MutableStateFlow<List<Budget>>(emptyList())
 
     private fun updateBudgetsState() {
-        budgetsState.value = budgets.values.map {
-            Budget(
-                id = it.id,
-                name = it.name,
-                details = it.details,
-                totalAllocation = it.totalAllocation,
-                totalExpense = it.totalExpense,
-            )
-        }
+        budgetsState.value = budgets.values.toList()
     }
 
 
@@ -72,7 +46,11 @@ internal class BudgetRepositoryMemoryImpl: BudgetRepository {
 
     override suspend fun createBudget(budget: Budget): Budget = withContext(Dispatchers.IO) {
         val totalAllocation = budget.categories.sumOf { it.allocation }
-        val copy = budget.copy(id = UUID.randomUUID().toString(), totalAllocation = totalAllocation)
+        val categories = budget.categories.map { it.copy(id = UUID.randomUUID().toString()) }
+        val copy = budget.copy(id = UUID.randomUUID().toString(),
+            totalAllocation = totalAllocation,
+            categories = categories
+        )
         budgets[copy.id] = copy
         updateBudgetsState()
         copy
