@@ -1,12 +1,10 @@
-package rahulstech.android.budgetapp.ui.screen
+package rahulstech.android.budgetapp.ui.screen.viewbudget
 
 import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -17,7 +15,6 @@ import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
@@ -30,130 +27,60 @@ import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Devices.PIXEL
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewModelScope
-import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.onStart
-import kotlinx.coroutines.launch
 import rahulstech.android.budgetapp.R
-import rahulstech.android.budgetapp.repository.BudgetRepository
 import rahulstech.android.budgetapp.repository.model.Budget
 import rahulstech.android.budgetapp.repository.model.BudgetCategory
 import rahulstech.android.budgetapp.repository.model.Expense
+import rahulstech.android.budgetapp.ui.components.BudgetDetailsDialog
+import rahulstech.android.budgetapp.ui.components.BudgetEditDialog
 import rahulstech.android.budgetapp.ui.components.CategoryDialog
+import rahulstech.android.budgetapp.ui.components.BudgetCategoryDialogState
+import rahulstech.android.budgetapp.ui.components.BudgetDialogState
 import rahulstech.android.budgetapp.ui.components.ExpenseDialog
+import rahulstech.android.budgetapp.ui.components.ExpenseDialogState
 import rahulstech.android.budgetapp.ui.components.ExpenseLinearProgress
-import javax.inject.Inject
+import rahulstech.android.budgetapp.ui.screen.ExitCallback
+import rahulstech.android.budgetapp.ui.screen.NavigationCallback
+import rahulstech.android.budgetapp.ui.screen.SnackBarCallback
+import rahulstech.android.budgetapp.ui.screen.SnackBarEvent
+import rahulstech.android.budgetapp.ui.screen.UIState
 
 private const val TAG = "ViewBudget"
 
-@HiltViewModel
-class ViewBudgetViewModel @Inject constructor(val repo: BudgetRepository): ViewModel() {
-
-    // observe budget
-    private val _budgetState = MutableStateFlow<UIState<Budget>>(UIState.Idle())
-    val budgetState = _budgetState.asStateFlow()
-
-    fun observeBudget(id: String) {
-        viewModelScope.launch {
-            repo.observeBudgetById(id)
-                .onStart { _budgetState.value = UIState.Loading() }
-                .catch { cause -> _budgetState.value = UIState.Error(cause) }
-                .collectLatest { budget ->
-                    Log.i(TAG, "budget refreshed")
-                    _budgetState.value = when(budget) {
-                        null -> UIState.NotFound()
-                        else -> UIState.Success(budget)
-                    }
-                }
-        }
-    }
-
-    // edit budget
-    private val actionEditBudget = UIAction<Budget,Budget>(
-        action = { repo.editBudget(it) },
-        converter = { arg,result ->
-            if (null == result) {
-                UIState.NotFound()
-            }
-            else {
-                UIState.Success(result)
-            }
-        }
-    )
-    val budgetSaveState = actionEditBudget.uiState
-
-    fun editBudget(budget: Budget) {
-        viewModelScope.launch {
-            actionEditBudget.doAction(budget)
-        }
-    }
-
-    // add category
-    private val actionAddCategory = UIAction<BudgetCategory, BudgetCategory>(
-        action = { repo.addCategory(it) },
-    )
-    val categorySaveState = actionAddCategory.uiState
-
-    fun addCategory(category: BudgetCategory) {
-        viewModelScope.launch {
-            actionAddCategory.doAction(category)
-        }
-    }
-
-    // add expense
-    private val actionAddExpense = UIAction<Expense,Expense>(
-        action = { repo.addExpense(it) }
-    )
-    val expenseSaveState = actionAddExpense.uiState
-
-    fun addExpense(expense: Expense) {
-        viewModelScope.launch {
-            actionAddExpense.doAction(expense)
-        }
-    }
-}
 
 @Composable
 fun ViewBudgetRoute(budgetId: String,
                     snackBarCallback: SnackBarCallback,
-                    navigateToCallback: NavigateToCallback,
-                    exitScreenCallback: ExitScreenCallback,
+                    navigateToCallback: NavigationCallback,
+                    exitScreenCallback: ExitCallback,
                     viewModel: ViewBudgetViewModel = hiltViewModel(),
                     )
 {
     val context = LocalContext.current
+    val budgetDialogState by viewModel.budgetEditDialogState.collectAsStateWithLifecycle()
+    val categoryDialogState by viewModel.categoryDialogState.collectAsStateWithLifecycle()
+    val expenseDialogState by viewModel.expenseDialogState.collectAsStateWithLifecycle()
 
     LaunchedEffect(budgetId) {
         viewModel.observeBudget(budgetId)
@@ -168,19 +95,41 @@ fun ViewBudgetRoute(budgetId: String,
             val budget = (budgetUIState as UIState.Success<Budget>).data
             ViewBudgetScreen(
                 budget = budget,
-                onNavigateUp = {exitScreenCallback(null,null) },
-                onAddExpense = { viewModel.addExpense(it) },
-                onAddCategory = { viewModel.addCategory(it) },
-                onEditBudget = { viewModel.editBudget(it) }
+                onNavigateUp = { exitScreenCallback() },
+                onUIEvent = { event ->
+                    when(event) {
+                        is ShowEditBudgetDialogEvent -> {
+                            viewModel.updateBudgetEditDialogState(BudgetDialogState(showDialog = true, budget = budget))
+                        }
+                        is EditBudgetEvent -> { viewModel.editBudget(event.budget) }
+                        is ShowAddCategoryDialogEvent -> {
+                            viewModel.updateCategoryDialogState(BudgetCategoryDialogState(showDialog = true, budget = budget))
+                        }
+                        is AddCategoryEvent -> { viewModel.addCategory(event.category) }
+                        is ShowAddExpenseDialogEvent -> {
+                            viewModel.updateExpenseDialogState(ExpenseDialogState(showDialog = true, category = event.category))
+                        }
+                        is AddExpenseEvent -> { viewModel.addExpense(event.expense) }
+                    }
+                }
             )
+        }
+        is UIState.NotFound -> {
+            Log.i(TAG,"budget with id=$budgetId not found")
+            snackBarCallback(SnackBarEvent(
+                message = stringResource(R.string.message_budget_not_found)
+            ))
+            exitScreenCallback()
         }
         is UIState.Error -> {
             Log.e(TAG, "view budget error", (budgetUIState as UIState.Error).cause)
-            snackBarCallback(SnackBarEvent(
-                message = stringResource(R.string.message_observe_budget_error),
-                duration = SnackbarDuration.Short
-            ))
-            exitScreenCallback(null,null)
+            snackBarCallback(
+                SnackBarEvent(
+                    message = stringResource(R.string.message_observe_budget_error),
+                    duration = SnackbarDuration.Short
+                )
+            )
+            exitScreenCallback()
         }
         else -> {}
     }
@@ -189,42 +138,89 @@ fun ViewBudgetRoute(budgetId: String,
     LaunchedEffect(budgetSaveState) {
         when(budgetSaveState) {
             is UIState.Success<Budget> -> {
-                snackBarCallback(SnackBarEvent(
-                    message = context.getString(R.string.message_budget_save_success)
-                ))
+                viewModel.updateBudgetEditDialogState(BudgetDialogState())
+                snackBarCallback(
+                    SnackBarEvent(
+                        message = context.getString(R.string.message_budget_save_success)
+                    )
+                )
             }
             else -> {}
         }
+    }
+
+    if (budgetDialogState.showDialog) {
+        BudgetEditDialog(
+            budgetDialogState = budgetDialogState,
+            onDismiss = { viewModel.updateBudgetEditDialogState(BudgetDialogState()) },
+            onClickSave = { editedBudget ->
+                // BudgetEditDialog already set the id to the editedBudget
+                viewModel.updateBudgetEditDialogState(budgetDialogState.copy(enabled = false, budget = editedBudget))
+                viewModel.editBudget(editedBudget)
+            }
+        )
     }
 
     val categorySaveState by viewModel.categorySaveState.collectAsStateWithLifecycle(UIState.Idle())
     LaunchedEffect(categorySaveState) {
         when(categorySaveState) {
             is UIState.Success<BudgetCategory> -> {
-                snackBarCallback(SnackBarEvent(
-                    message = context.getString(R.string.message_budget_category_save_success)
-                ))
+                viewModel.updateCategoryDialogState(BudgetCategoryDialogState())
+                snackBarCallback(
+                    SnackBarEvent(
+                        message = context.getString(R.string.message_budget_category_save_success)
+                    )
+                )
             }
             is UIState.Error -> {
                 Log.e(TAG,"category not saved", (categorySaveState as UIState.Error).cause)
-                snackBarCallback(SnackBarEvent(
-                    message = context.getString(R.string.message_budget_category_save_error)
-                ))
+                snackBarCallback(
+                    SnackBarEvent(
+                        message = context.getString(R.string.message_budget_category_save_error)
+                    )
+                )
             }
             else -> {}
         }
+    }
+
+    if (categoryDialogState.showDialog) {
+        CategoryDialog(
+            categoryDialogState = categoryDialogState,
+            onDismiss = { viewModel.updateCategoryDialogState(BudgetCategoryDialogState()) },
+            onClickSave = { category ->
+                // CategoryDialog already set the budgetId to the category
+                viewModel.updateCategoryDialogState(categoryDialogState.copy(isSaving = true, category = category))
+                viewModel.addCategory(category)
+            }
+        )
     }
 
     val expenseSaveState by viewModel.expenseSaveState.collectAsStateWithLifecycle(UIState.Idle())
     LaunchedEffect(expenseSaveState) {
         when(expenseSaveState) {
             is UIState.Success<Expense> -> {
-                snackBarCallback(SnackBarEvent(
-                    message = context.getString(R.string.message_expense_add_successful),
-                ))
+                viewModel.updateExpenseDialogState(ExpenseDialogState())
+                snackBarCallback(
+                    SnackBarEvent(
+                        message = context.getString(R.string.message_expense_add_successful),
+                    )
+                )
             }
             else -> {}
         }
+    }
+
+    if (expenseDialogState.showDialog) {
+        ExpenseDialog(
+            expenseDialogState = expenseDialogState,
+            onDismiss = { viewModel.updateExpenseDialogState(ExpenseDialogState()) },
+            onSaveExpense = { expense ->
+                // ExpenseDialog already set the budgetId and categoryId to the expense
+                viewModel.updateExpenseDialogState(expenseDialogState.copy(enabled = false, expense = expense))
+                viewModel.addExpense(expense)
+            }
+        )
     }
 }
 
@@ -232,16 +228,12 @@ fun ViewBudgetRoute(budgetId: String,
 @Composable
 fun ViewBudgetScreen(budget: Budget,
                      onNavigateUp: ()-> Unit = {},
-                     onAddExpense: (Expense) -> Unit = {},
-                     onAddCategory: (BudgetCategory) -> Unit = {},
-                     onEditBudget: (Budget)-> Unit = {},
+                     onUIEvent: ViewBudgetUIEventCallback = {}
                      )
 {
     var showBudgetDetails by remember { mutableStateOf(false) }
-    var showBudgetDialog by remember { mutableStateOf(false) }
 
     Scaffold(
-        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
         topBar = {
             TopAppBar(
                 title = {
@@ -252,7 +244,7 @@ fun ViewBudgetScreen(budget: Budget,
                 },
                 actions = {
                     // edit
-                    IconButton(onClick = { showBudgetDialog = true}) {
+                    IconButton(onClick = { onUIEvent(ShowEditBudgetDialogEvent(budget))}) {
                         Icon(
                             imageVector = Icons.Default.Edit,
                             contentDescription = stringResource(R.string.message_edit_category)
@@ -269,7 +261,7 @@ fun ViewBudgetScreen(budget: Budget,
                 },
                 navigationIcon = {
                     IconButton(onClick = onNavigateUp) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null) // TODO: add content description
                     }
                 }
             )
@@ -279,10 +271,7 @@ fun ViewBudgetScreen(budget: Budget,
             budget = budget,
             modifier = Modifier.padding(padding),
             categories = budget.categories,
-            onAddExpense = onAddExpense,
-            onAddCategory = {
-                onAddCategory(it.copy(budgetId = budget.id))
-            },
+            onUIEvent = onUIEvent,
         )
     }
 
@@ -292,25 +281,13 @@ fun ViewBudgetScreen(budget: Budget,
             onDismiss = { showBudgetDetails = false }
         )
     }
-
-    if (showBudgetDialog) {
-        BudgetEditDialog(
-            budget = budget,
-            onDismiss = { showBudgetDialog = false },
-            onClickSaveBudget = {
-                showBudgetDialog = false
-                onEditBudget(it.copy(id = budget.id))
-            }
-        )
-    }
 }
 
 @Composable
 private fun BudgetContent(budget: Budget,
-                          modifier: Modifier = Modifier,
                           categories: List<BudgetCategory>,
-                          onAddExpense: (Expense) -> Unit,
-                          onAddCategory: (BudgetCategory)-> Unit,
+                          modifier: Modifier = Modifier,
+                          onUIEvent: ViewBudgetUIEventCallback
                           )
 {
     LazyVerticalGrid(
@@ -319,7 +296,7 @@ private fun BudgetContent(budget: Budget,
             .fillMaxSize()
             .padding(16.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         // Header: Summary card (full width)
         item(span = { GridItemSpan(maxLineSpan) }) {
@@ -329,7 +306,7 @@ private fun BudgetContent(budget: Budget,
         // Header: Categories title row (full width)
         item(span = { GridItemSpan(maxLineSpan) }) {
             CategoriesHeader(
-                onAddCategory = onAddCategory
+                onClickAddCategory = { onUIEvent(ShowAddCategoryDialogEvent(budget)) }
             )
         }
 
@@ -338,7 +315,7 @@ private fun BudgetContent(budget: Budget,
             items(categories, key = { it.id }) { category ->
                 CategoryCard(
                     category = category,
-                    onAddExpense = onAddExpense,
+                    onUIEvent = onUIEvent,
                 )
             }
         }
@@ -350,9 +327,6 @@ fun BudgetSummaryCard(budget: Budget) {
     Card(
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(4.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.background
-        ),
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
@@ -381,10 +355,8 @@ fun BudgetSummaryCard(budget: Budget) {
 }
 
 @Composable
-fun CategoriesHeader(onAddCategory: (BudgetCategory) -> Unit)
+fun CategoriesHeader(onClickAddCategory: ()-> Unit)
 {
-    var showAddCategoryDialog by rememberSaveable { mutableStateOf(false) }
-
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -395,35 +367,20 @@ fun CategoriesHeader(onAddCategory: (BudgetCategory) -> Unit)
             style = MaterialTheme.typography.titleLarge
         )
 
-        IconButton(onClick = { showAddCategoryDialog = true } ) {
+        IconButton(onClick = onClickAddCategory) {
             Icon(imageVector = Icons.Default.Add, contentDescription = null)
         }
-    }
-
-    if (showAddCategoryDialog) {
-        CategoryDialog(
-            onDismiss = { showAddCategoryDialog = false },
-            onClickSave = {
-                showAddCategoryDialog = false
-                onAddCategory(it)
-            }
-        )
     }
 }
 
 @Composable
 fun CategoryCard(category: BudgetCategory,
-                 onAddExpense: (Expense)-> Unit,
+                 onUIEvent: ViewBudgetUIEventCallback,
                  )
 {
-    var showAddExpenseDialog by rememberSaveable { mutableStateOf(false) }
-
     Card(
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(3.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.background
-        )
     ) {
         Column(
             modifier = Modifier.padding(12.dp),
@@ -468,7 +425,7 @@ fun CategoryCard(category: BudgetCategory,
 
                 // add expense
                 FilledTonalButton (
-                    onClick = { showAddExpenseDialog = true }
+                    onClick = { onUIEvent(ShowAddExpenseDialogEvent(category)) }
                 ) {
                     Icon(imageVector = Icons.Default.Add, contentDescription = null)
 
@@ -477,142 +434,9 @@ fun CategoryCard(category: BudgetCategory,
                     Text(text = stringResource(R.string.label_add_expense))
                 }
             }
-
-
-        }
-    }
-
-    if (showAddExpenseDialog) {
-        ExpenseDialog(
-            category = category,
-            onDismiss = { showAddExpenseDialog = false },
-            onSaveExpense = {
-                showAddExpenseDialog = false
-                onAddExpense(it)
-            }
-        )
-    }
-}
-
-@Composable
-fun BudgetDetailsDialog(details: String, onDismiss: () -> Unit)
-{
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp)
-        ) {
-
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Text(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
-                    text = stringResource(R.string.label_budget_details),
-                    style = MaterialTheme.typography.titleLarge,
-                )
-
-                TextButton(
-                    onClick = onDismiss,
-                ) {
-                    Text(text = stringResource(R.string.label_cancel))
-                }
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Text(
-                text = details,
-                style = MaterialTheme.typography.bodyLarge
-            )
         }
     }
 }
-
-@Composable
-fun BudgetEditDialog(budget: Budget,
-                     onDismiss: ()-> Unit,
-                     onClickSaveBudget: (Budget)-> Unit)
-{
-    var name by rememberSaveable { mutableStateOf(budget.name) }
-    var details by rememberSaveable { mutableStateOf(budget.details) }
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-
-    ModalBottomSheet(
-        modifier = Modifier.fillMaxHeight(),
-        onDismissRequest = onDismiss,
-        sheetState = sheetState,
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(space = 12.dp, alignment = Alignment.End)
-            ) {
-
-                Text(
-                    modifier = Modifier.fillMaxWidth().weight(1f),
-                    text = stringResource(R.string.title_edit_budget),
-                    style = MaterialTheme.typography.titleLarge
-                )
-
-                // cancel
-                TextButton(onClick = onDismiss) {
-                    Text(text = stringResource(R.string.label_cancel))
-                }
-
-                // save
-                TextButton(
-                    enabled = name.isNotBlank(),
-                    onClick = {
-                        val newBudget = budget.copy(
-                            name = name,
-                            details = details
-                        )
-                        onClickSaveBudget(newBudget)
-                    }
-                ) {
-                    Text(
-                        text = stringResource(R.string.label_save),
-                    )
-                }
-            }
-            OutlinedTextField(
-                modifier = Modifier.fillMaxWidth(),
-                value = name,
-                onValueChange = { name = it },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Text
-                )
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            OutlinedTextField(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(180.dp),
-                value = details,
-                onValueChange = { details = it },
-                maxLines = 10,
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Text
-                )
-            )
-        }
-    }
-}
-
 
 @Preview(
     showBackground = true,

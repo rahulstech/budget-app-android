@@ -44,5 +44,6 @@
     <string name="message_budget_category_save_success">Category saved</string>
     <string name="message_budget_category_save_error">Something error occurred, category not saved</string>
     <string name="message_expense_add_successful">Expense added</string>
+    <string name="message_budget_not_found">Budget not found</string>
 
 </resources>
