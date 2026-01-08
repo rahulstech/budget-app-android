@@ -50,7 +50,7 @@ class BudgetListViewMode @Inject constructor(private val repo: BudgetRepository)
 }
 
 @Composable
-fun BudgetListRoute(navigateTo: NavigateToCallback,
+fun BudgetListRoute(navigateTo: NavigationCallback,
                     viewModel: BudgetListViewMode = hiltViewModel(),
                     )
 {
@@ -58,8 +58,8 @@ fun BudgetListRoute(navigateTo: NavigateToCallback,
     val budgets by viewModel.allBudgets.collectAsStateWithLifecycle(emptyList())
     BudgetListScreen(
         budgets = budgets,
-        onClickBudget = { navigateTo(Screen.ViewBudget, bundleOf ( "budgetId" to it.id )) },
-        onClickCreateBudget = { navigateTo(Screen.CreateBudget, null) }
+        onClickBudget = { navigateTo(NavigationEvent(Screen.ViewBudget, ScreenArgs(budgetId = it.id)))},
+        onClickCreateBudget = { navigateTo(NavigationEvent(Screen.CreateBudget))},
     )
 }
 

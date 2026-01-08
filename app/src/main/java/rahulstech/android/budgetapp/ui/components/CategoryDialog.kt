@@ -33,19 +33,33 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import rahulstech.android.budgetapp.R
+import rahulstech.android.budgetapp.repository.model.Budget
 import rahulstech.android.budgetapp.repository.model.BudgetCategory
+import rahulstech.android.budgetapp.ui.screen.BUDGET_CATEGORY_PLACEHOLDER
+import rahulstech.android.budgetapp.ui.screen.BUDGET_PLACEHOLDER
+
+data class BudgetCategoryDialogState(
+    val showDialog: Boolean = false,
+    val isSaving: Boolean = false,
+    val isEditMode: Boolean = false,
+    val category: BudgetCategory = BUDGET_CATEGORY_PLACEHOLDER,
+    val budget: Budget = BUDGET_PLACEHOLDER
+)
 
 @Composable
-fun CategoryDialog(initialCategory: BudgetCategory? = null,
+fun CategoryDialog(onDismiss: ()-> Unit,
                    onClickSave: (BudgetCategory)-> Unit,
-                   onDismiss: ()-> Unit)
+                   categoryDialogState: BudgetCategoryDialogState,
+                   )
 {
-    var name by rememberSaveable { mutableStateOf(initialCategory?.name ?: "") }
-    var note by rememberSaveable { mutableStateOf(initialCategory?.note ?: "") }
-    var allocation by rememberSaveable { mutableStateOf(initialCategory?.allocation?.toString() ?: "") }
+    val enabled = !categoryDialogState.isSaving
+    val budget = categoryDialogState.budget
+    val initialCategory = categoryDialogState.category
+    var name by rememberSaveable { mutableStateOf(initialCategory.name ) }
+    var note by rememberSaveable { mutableStateOf(initialCategory.note ) }
+    var allocation by rememberSaveable { mutableStateOf(initialCategory.allocation.toString()) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     ModalBottomSheet (
@@ -58,33 +72,32 @@ fun CategoryDialog(initialCategory: BudgetCategory? = null,
             // top bar
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(space = 12.dp, alignment = Alignment.End),
+                verticalAlignment = Alignment.Top,
+                horizontalArrangement = Arrangement.spacedBy(space = 12.dp),
             ) {
                 // title
                 Text(
                     modifier = Modifier.fillMaxWidth().weight(1f),
                     text = stringResource(R.string.title_new_budget_category),
-                    style = MaterialTheme.typography.titleMedium,
-                    textAlign = TextAlign.Center
+                    style = MaterialTheme.typography.titleLarge,
                 )
 
                 // cancel button
-                TextButton(onClick = { onDismiss() }) {
+                TextButton(
+                    enabled = enabled,
+                    onClick = { onDismiss() }
+                ) {
                     Text(text = stringResource(R.string.label_cancel))
                 }
 
                 // save button
                 TextButton(
-                    enabled = name.isNotBlank(),
+                    enabled = enabled && name.isNotBlank(),
                     onClick = {
                         val alloc = allocation.toDoubleOrNull() ?: 0.0
-                        val category = initialCategory?.copy(
-                            name = name,
-                            note = note,
-                            allocation = alloc
-                        ) ?: BudgetCategory(
-                            budgetId = "",
+                        val category = BudgetCategory(
+                            id = initialCategory.id,
+                            budgetId = budget.id,
                             name = name,
                             note = note,
                             allocation = alloc

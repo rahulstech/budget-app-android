@@ -1,6 +1,5 @@
 package rahulstech.android.budgetapp.ui.screen
 
-import android.os.Bundle
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -20,7 +19,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.core.os.bundleOf
 import androidx.navigation.NavController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -28,6 +26,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import kotlinx.coroutines.launch
+import rahulstech.android.budgetapp.ui.screen.createbudet.CreateBudgetRoute
+import rahulstech.android.budgetapp.ui.screen.viewbudget.ViewBudgetRoute
 
 enum class Screen(val route: String) {
     BudgetList("budgets"),
@@ -38,39 +38,40 @@ enum class Screen(val route: String) {
 
     ViewBudgetCategory("budgetCategories/{categoryId}"),
 
-    AddExpense("budgets/{budgetId}/budgetCategories/{categoryId}/add_expense"),
-
-    EditExpense("edit_expense/{expenseId}"),
-
     ;
 
-    fun create(arguments: Bundle? = null): String  {
-        val args = arguments ?: bundleOf()
+    fun create(args: ScreenArgs): String  {
         return when(this) {
-            ViewBudget -> "budgets/${args.getString("budgetId")}"
+            ViewBudget -> "budgets/${args.budgetId}"
+            ViewBudgetCategory -> "budgetCategories/${args.categoryId}"
             else -> route
         }
     }
 }
 
-typealias NavigateToCallback = (Screen, Bundle?)-> Unit
+data class ScreenArgs(
+    val budgetId: String = "",
+    val categoryId: String = ""
+)
+
+data class NavigationEvent(
+    val screen: Screen,
+    val args: ScreenArgs = ScreenArgs(),
+)
+
+typealias NavigationCallback = (NavigationEvent)-> Unit
 
 fun handleNavigateTo(navController: NavController,
-                     screen: Screen,
-                     args: Bundle? = null)
+                     event: NavigationEvent)
 {
-    val route = screen.create(args)
+    val route = event.screen.create(event.args)
     navController.navigate(route)
 }
 
-typealias ExitScreenCallback = (Bundle?,Screen?)-> Unit
+typealias ExitCallback = ()-> Unit
 
-fun handleExitScreen(navController: NavController,
-                     popUpTo: Screen? = null,
-                     results: Bundle? = null,
-                     )
+fun handleExitScreen(navController: NavController)
 {
-    // TODO: implement handleExitScreen
     navController.popBackStack()
 }
 
@@ -160,9 +161,7 @@ fun MainNavigation() {
                 route = Screen.BudgetList.route
             ) {
                 BudgetListRoute(
-                    navigateTo = { screen, args ->
-                        handleNavigateTo(navController,screen,args)
-                    }
+                    navigateTo = { handleNavigateTo(navController,it) }
                 )
             }
 
@@ -172,9 +171,8 @@ fun MainNavigation() {
             ) {
                 CreateBudgetRoute(
                     snackBarCallback = snackBarCallback,
-                    exitScreen = { results, popUpTo ->
-                        handleExitScreen(navController = navController, popUpTo = popUpTo, results = results)
-                    }
+                    exitScreen = { handleExitScreen(navController) },
+                    navigateTo = { handleNavigateTo(navController, it) }
                 )
             }
 
@@ -190,12 +188,8 @@ fun MainNavigation() {
                 ViewBudgetRoute(
                     budgetId = budgetId,
                     snackBarCallback = snackBarCallback,
-                    navigateToCallback = { screen, args ->
-                        handleNavigateTo(navController, screen, args)
-                    },
-                    exitScreenCallback = { results, popUpTo ->
-                        handleExitScreen(navController = navController, popUpTo = popUpTo, results = results)
-                    }
+                    navigateToCallback = { handleNavigateTo(navController, it) },
+                    exitScreenCallback = { handleExitScreen(navController) }
                 )
             }
         }
