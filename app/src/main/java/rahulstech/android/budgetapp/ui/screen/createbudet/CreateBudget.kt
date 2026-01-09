@@ -51,7 +51,6 @@ import rahulstech.android.budgetapp.repository.model.Budget
 import rahulstech.android.budgetapp.repository.model.BudgetCategory
 import rahulstech.android.budgetapp.ui.components.BudgetCategoryDialogState
 import rahulstech.android.budgetapp.ui.components.CategoryDialog
-import rahulstech.android.budgetapp.ui.screen.ExitCallback
 import rahulstech.android.budgetapp.ui.screen.NavigationCallback
 import rahulstech.android.budgetapp.ui.screen.NavigationEvent
 import rahulstech.android.budgetapp.ui.screen.Screen
@@ -66,7 +65,6 @@ private const val TAG = "CreateBudget"
 
 @Composable
 fun CreateBudgetRoute(snackBarCallback: SnackBarCallback,
-                      exitScreen: ExitCallback,
                       navigateTo: NavigationCallback,
                       viewModel: CreateBudgetViewModel = hiltViewModel())
 {
@@ -89,8 +87,11 @@ fun CreateBudgetRoute(snackBarCallback: SnackBarCallback,
                         action = SnackBarAction(label = context.getString(R.string.label_ok))
                     )
                 )
-                exitScreen()
-                navigateTo(NavigationEvent(screen = Screen.ViewBudget, ScreenArgs(budgetId = budget.id)))
+                navigateTo(NavigationEvent.ForwardTo(
+                    screen = Screen.ViewBudget,
+                    args = ScreenArgs(budgetId = budget.id),
+                    popCurrent = true)
+                )
             }
             is UIState.Error -> {
                 Log.e(TAG, "create budget error", (budgetSaveState as UIState.Error).cause)

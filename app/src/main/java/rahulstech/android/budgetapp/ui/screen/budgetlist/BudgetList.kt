@@ -1,4 +1,4 @@
-package rahulstech.android.budgetapp.ui.screen
+package rahulstech.android.budgetapp.ui.screen.budgetlist
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -31,7 +31,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.core.os.bundleOf
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -41,13 +40,11 @@ import rahulstech.android.budgetapp.R
 import rahulstech.android.budgetapp.repository.BudgetRepository
 import rahulstech.android.budgetapp.repository.model.Budget
 import rahulstech.android.budgetapp.ui.components.ExpenseLinearProgress
+import rahulstech.android.budgetapp.ui.screen.NavigationCallback
+import rahulstech.android.budgetapp.ui.screen.NavigationEvent
+import rahulstech.android.budgetapp.ui.screen.Screen
+import rahulstech.android.budgetapp.ui.screen.ScreenArgs
 import javax.inject.Inject
-
-@HiltViewModel
-class BudgetListViewMode @Inject constructor(private val repo: BudgetRepository): ViewModel() {
-
-    val allBudgets: Flow<List<Budget>> by lazy { repo.observeAllBudgets() }
-}
 
 @Composable
 fun BudgetListRoute(navigateTo: NavigationCallback,
@@ -58,8 +55,10 @@ fun BudgetListRoute(navigateTo: NavigationCallback,
     val budgets by viewModel.allBudgets.collectAsStateWithLifecycle(emptyList())
     BudgetListScreen(
         budgets = budgets,
-        onClickBudget = { navigateTo(NavigationEvent(Screen.ViewBudget, ScreenArgs(budgetId = it.id)))},
-        onClickCreateBudget = { navigateTo(NavigationEvent(Screen.CreateBudget))},
+        onClickBudget = { navigateTo(
+            NavigationEvent.ForwardTo(Screen.ViewBudget, ScreenArgs(budgetId = it.id))
+        )},
+        onClickCreateBudget = { navigateTo(NavigationEvent.ForwardTo(Screen.CreateBudget))},
     )
 }
 

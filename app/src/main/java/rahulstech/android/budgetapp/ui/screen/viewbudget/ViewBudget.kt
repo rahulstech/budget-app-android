@@ -40,6 +40,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Devices.PIXEL
@@ -60,8 +61,10 @@ import rahulstech.android.budgetapp.ui.components.BudgetDialogState
 import rahulstech.android.budgetapp.ui.components.ExpenseDialog
 import rahulstech.android.budgetapp.ui.components.ExpenseDialogState
 import rahulstech.android.budgetapp.ui.components.ExpenseLinearProgress
-import rahulstech.android.budgetapp.ui.screen.ExitCallback
 import rahulstech.android.budgetapp.ui.screen.NavigationCallback
+import rahulstech.android.budgetapp.ui.screen.NavigationEvent
+import rahulstech.android.budgetapp.ui.screen.Screen
+import rahulstech.android.budgetapp.ui.screen.ScreenArgs
 import rahulstech.android.budgetapp.ui.screen.SnackBarCallback
 import rahulstech.android.budgetapp.ui.screen.SnackBarEvent
 import rahulstech.android.budgetapp.ui.screen.UIState
@@ -72,8 +75,7 @@ private const val TAG = "ViewBudget"
 @Composable
 fun ViewBudgetRoute(budgetId: String,
                     snackBarCallback: SnackBarCallback,
-                    navigateToCallback: NavigationCallback,
-                    exitScreenCallback: ExitCallback,
+                    navigateTo: NavigationCallback,
                     viewModel: ViewBudgetViewModel = hiltViewModel(),
                     )
 {
@@ -95,21 +97,27 @@ fun ViewBudgetRoute(budgetId: String,
             val budget = (budgetUIState as UIState.Success<Budget>).data
             ViewBudgetScreen(
                 budget = budget,
-                onNavigateUp = { exitScreenCallback() },
+                navigateTo,
                 onUIEvent = { event ->
                     when(event) {
-                        is ShowEditBudgetDialogEvent -> {
+                        is ViewBudgetUIEvent.ShowEditBudgetDialogEvent -> {
                             viewModel.updateBudgetEditDialogState(BudgetDialogState(showDialog = true, budget = budget))
                         }
-                        is EditBudgetEvent -> { viewModel.editBudget(event.budget) }
-                        is ShowAddCategoryDialogEvent -> {
+                        is ViewBudgetUIEvent.EditBudgetEvent -> { viewModel.editBudget(event.budget) }
+                        is ViewBudgetUIEvent.ShowAddCategoryDialogEvent -> {
                             viewModel.updateCategoryDialogState(BudgetCategoryDialogState(showDialog = true, budget = budget))
                         }
-                        is AddCategoryEvent -> { viewModel.addCategory(event.category) }
-                        is ShowAddExpenseDialogEvent -> {
+                        is ViewBudgetUIEvent.AddCategoryEvent -> { viewModel.addCategory(event.category) }
+                        is ViewBudgetUIEvent.ShowAddExpenseDialogEvent -> {
                             viewModel.updateExpenseDialogState(ExpenseDialogState(showDialog = true, category = event.category))
                         }
-                        is AddExpenseEvent -> { viewModel.addExpense(event.expense) }
+                        is ViewBudgetUIEvent.AddExpenseEvent -> { viewModel.addExpense(event.expense) }
+                        is ViewBudgetUIEvent.ViewExpenses -> {
+                            navigateTo(NavigationEvent.ForwardTo(
+                                screen = Screen.ViewExpenses,
+                                args = ScreenArgs(budgetId = event.budgetId, categoryId = event.categoryId)
+                            ))
+                        }
                     }
                 }
             )
@@ -119,7 +127,7 @@ fun ViewBudgetRoute(budgetId: String,
             snackBarCallback(SnackBarEvent(
                 message = stringResource(R.string.message_budget_not_found)
             ))
-            exitScreenCallback()
+            navigateTo(NavigationEvent.Exit())
         }
         is UIState.Error -> {
             Log.e(TAG, "view budget error", (budgetUIState as UIState.Error).cause)
@@ -129,7 +137,7 @@ fun ViewBudgetRoute(budgetId: String,
                     duration = SnackbarDuration.Short
                 )
             )
-            exitScreenCallback()
+            navigateTo(NavigationEvent.Exit())
         }
         else -> {}
     }
@@ -227,11 +235,12 @@ fun ViewBudgetRoute(budgetId: String,
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ViewBudgetScreen(budget: Budget,
-                     onNavigateUp: ()-> Unit = {},
+                     navigateTo: NavigationCallback = {},
                      onUIEvent: ViewBudgetUIEventCallback = {}
                      )
 {
     var showBudgetDetails by remember { mutableStateOf(false) }
+    val categories = budget.categories
 
     Scaffold(
         topBar = {
@@ -244,7 +253,7 @@ fun ViewBudgetScreen(budget: Budget,
                 },
                 actions = {
                     // edit
-                    IconButton(onClick = { onUIEvent(ShowEditBudgetDialogEvent(budget))}) {
+                    IconButton(onClick = { onUIEvent(ViewBudgetUIEvent.ShowEditBudgetDialogEvent(budget)) }) {
                         Icon(
                             imageVector = Icons.Default.Edit,
                             contentDescription = stringResource(R.string.message_edit_category)
@@ -253,26 +262,52 @@ fun ViewBudgetScreen(budget: Budget,
 
                     // info
                     IconButton(onClick = { showBudgetDetails = true }) {
-                        Icon(
-                            imageVector = Icons.Outlined.Info,
-                            contentDescription = stringResource(R.string.message_show_budget_details)
-                        )
+                        Icon(Icons.Outlined.Info, stringResource(R.string.message_show_budget_details))
                     }
                 },
                 navigationIcon = {
-                    IconButton(onClick = onNavigateUp) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null) // TODO: add content description
+                    IconButton(onClick = { navigateTo(NavigationEvent.Exit()) }) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.message_navigate_up))
                     }
                 }
             )
         }
-    ) { padding ->
-        BudgetContent(
-            budget = budget,
-            modifier = Modifier.padding(padding),
-            categories = budget.categories,
-            onUIEvent = onUIEvent,
-        )
+    ) { innerPadding ->
+        LazyVerticalGrid(
+            columns = GridCells.Adaptive(minSize = 320.dp),
+            modifier = Modifier
+                .padding(innerPadding)
+                .fillMaxSize()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            // Header: Summary card (full width)
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                BudgetSummaryCard(budget = budget)
+            }
+
+            // Header: Categories title row (full width)
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                CategoriesHeader(
+                    onClickAddCategory = { onUIEvent(
+                        ViewBudgetUIEvent.ShowAddCategoryDialogEvent(
+                            budget
+                        )
+                    ) }
+                )
+            }
+
+            if (categories.isNotEmpty()) {
+                // Grid items
+                items(categories, key = { it.id }) { category ->
+                    CategoryCard(
+                        category = category,
+                        onUIEvent = onUIEvent,
+                    )
+                }
+            }
+        }
     }
 
     if (showBudgetDetails) {
@@ -280,45 +315,6 @@ fun ViewBudgetScreen(budget: Budget,
             details = budget.details,
             onDismiss = { showBudgetDetails = false }
         )
-    }
-}
-
-@Composable
-private fun BudgetContent(budget: Budget,
-                          categories: List<BudgetCategory>,
-                          modifier: Modifier = Modifier,
-                          onUIEvent: ViewBudgetUIEventCallback
-                          )
-{
-    LazyVerticalGrid(
-        columns = GridCells.Adaptive(minSize = 320.dp),
-        modifier = modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        // Header: Summary card (full width)
-        item(span = { GridItemSpan(maxLineSpan) }) {
-            BudgetSummaryCard(budget = budget)
-        }
-
-        // Header: Categories title row (full width)
-        item(span = { GridItemSpan(maxLineSpan) }) {
-            CategoriesHeader(
-                onClickAddCategory = { onUIEvent(ShowAddCategoryDialogEvent(budget)) }
-            )
-        }
-
-        if (categories.isNotEmpty()) {
-            // Grid items
-            items(categories, key = { it.id }) { category ->
-                CategoryCard(
-                    category = category,
-                    onUIEvent = onUIEvent,
-                )
-            }
-        }
     }
 }
 
@@ -418,14 +414,21 @@ fun CategoryCard(category: BudgetCategory,
             ) {
                 // view expenses
                 FilledTonalButton (
-                    onClick = {  }
+                    onClick = { onUIEvent(ViewBudgetUIEvent.ViewExpenses(budgetId = category.budgetId, categoryId = category.id)) }
                 ) {
+                    Icon(
+                        painter = painterResource(R.drawable.baseline_currency_rupee_24),
+                        contentDescription = null
+                    )
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
                     Text(text = stringResource(R.string.label_view_budget_expenses))
                 }
 
                 // add expense
                 FilledTonalButton (
-                    onClick = { onUIEvent(ShowAddExpenseDialogEvent(category)) }
+                    onClick = { onUIEvent(ViewBudgetUIEvent.ShowAddExpenseDialogEvent(category)) }
                 ) {
                     Icon(imageVector = Icons.Default.Add, contentDescription = null)
 
