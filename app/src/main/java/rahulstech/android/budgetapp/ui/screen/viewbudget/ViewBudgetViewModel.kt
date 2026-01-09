@@ -37,7 +37,7 @@ class ViewBudgetViewModel @Inject constructor(
 //
 //    val categoryState: StateFlow<UIState<List<BudgetCategory>>> = _categoriesState.asStateFlow()
 
-    fun observeBudget(id: String) {
+    fun observeBudget(id: Long) {
         viewModelScope.launch {
             repo.observeBudgetById(id)
                 .onStart { _budgetState.value = UIState.Loading() }

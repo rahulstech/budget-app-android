@@ -38,8 +38,8 @@ import rahulstech.android.budgetapp.ui.screen.SnackBarCallback
 import java.time.LocalDate
 
 @Composable
-fun ViewExpensesRoute(budgetId: String,
-                      categoryId: String? = null,
+fun ViewExpensesRoute(budgetId: Long,
+                      categoryId: Long? = null,
                       snackBarCallback: SnackBarCallback,
                       navigateTo: NavigationCallback,
                       viewModel: ViewExpensesViewModel = hiltViewModel())

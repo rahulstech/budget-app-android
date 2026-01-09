@@ -27,23 +27,26 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import androidx.navigation.navOptions
 import kotlinx.coroutines.launch
 import rahulstech.android.budgetapp.ui.screen.budgetlist.BudgetListRoute
 import rahulstech.android.budgetapp.ui.screen.createbudet.CreateBudgetRoute
 import rahulstech.android.budgetapp.ui.screen.viewbudget.ViewBudgetRoute
 import rahulstech.android.budgetapp.ui.screen.viewexpenses.ViewExpensesRoute
 
+private const val ARG_BUDGET_ID = "budgetId"
+
+private const val ARG_CATEGORY_ID = "categoryId"
+
 enum class Screen(val route: String) {
     BudgetList("budgets"),
 
     CreateBudget("create_budget"),
 
-    ViewBudget("budgets/{budgetId}"),
+    ViewBudget("budgets/{${ARG_BUDGET_ID}}"),
 
-    ViewBudgetCategory("budgetCategories/{categoryId}"),
+    ViewBudgetCategory("budgetCategories/{${ARG_CATEGORY_ID}}"),
 
-    ViewExpenses("budgets/{budgetId}/expenses?categoryId={categoryId}")
+    ViewExpenses("budgets/{${ARG_BUDGET_ID}}/expenses?categoryId={${ARG_CATEGORY_ID}}")
 
     ;
 
@@ -53,9 +56,7 @@ enum class Screen(val route: String) {
             ViewBudgetCategory -> "budgetCategories/${args.categoryId ?: ""}"
             ViewExpenses -> {
                 val queries = buildString {
-                    if (!args.categoryId.isNullOrBlank()) {
-                        append("categoryId=${args.categoryId}")
-                    }
+                    args.categoryId?.let { append("${ARG_CATEGORY_ID}=${it}") }
                 }
                 buildString {
                     append("budgets/${args.budgetId}/expenses")
@@ -71,8 +72,8 @@ enum class Screen(val route: String) {
 }
 
 data class ScreenArgs(
-    val budgetId: String? = null,
-    val categoryId: String? = null
+    val budgetId: Long? = null,
+    val categoryId: Long? = null
 )
 
 sealed class NavigationEvent {
@@ -210,12 +211,12 @@ fun MainNavigation() {
             composable(
                 route = Screen.ViewBudget.route,
                 arguments = listOf(
-                    navArgument("budgetId") {
-                        type = NavType.StringType
+                    navArgument(ARG_BUDGET_ID) {
+                        type = NavType.LongType
                     }
                 )
             ) { backStackEntry ->
-                val budgetId = backStackEntry.arguments?.getString("budgetId") ?: return@composable
+                val budgetId = backStackEntry.arguments?.getLong(ARG_BUDGET_ID) ?: return@composable
                 ViewBudgetRoute(
                     budgetId = budgetId,
                     snackBarCallback = snackBarCallback,
@@ -227,17 +228,17 @@ fun MainNavigation() {
             composable(
                 route = Screen.ViewExpenses.route,
                 arguments = listOf(
-                    navArgument("budgetId") {
-                        type = NavType.StringType
+                    navArgument(ARG_BUDGET_ID) {
+                        type = NavType.LongType
                     },
-                    navArgument("categoryId") {
-                        type = NavType.StringType
-                        defaultValue = ""
+                    navArgument(ARG_CATEGORY_ID) {
+                        type = NavType.LongType
+                        defaultValue = 0
                     }
                 )
             ) { backStackEntry ->
-                val budgetId = backStackEntry.arguments?.getString("budgetId")!!
-                val categoryId = backStackEntry.arguments?.getString("categoryId")
+                val budgetId = backStackEntry.arguments?.getLong(ARG_BUDGET_ID)!!
+                val categoryId = backStackEntry.arguments?.getLong(ARG_CATEGORY_ID)
                 ViewExpensesRoute(
                     budgetId = budgetId,
                     categoryId = categoryId,

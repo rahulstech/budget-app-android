@@ -10,21 +10,20 @@ import rahulstech.android.budgetapp.repository.BudgetRepository
 import rahulstech.android.budgetapp.repository.model.Budget
 import rahulstech.android.budgetapp.repository.model.BudgetCategory
 import rahulstech.android.budgetapp.repository.model.Expense
-import java.util.UUID
 
 internal class BudgetRepositoryMemoryImpl: BudgetRepository {
 
     private val budgets = mutableMapOf(
-        "1" to Budget(
-            id = "1",
+        1L to Budget(
+            id = 1L,
             name = "Budget 1",
             details = "This is the details of Budget 1",
             totalExpense = 12000.0,
             totalAllocation = 20000.0,
             categories = (1..10).map { item ->
                 BudgetCategory(
-                    id = "$item",
-                    budgetId = "1",
+                    id = item.toLong(),
+                    budgetId = 1L,
                     name = "Category 1.${item}",
                     note = "The is a short note of Category 1.${item}",
                     allocation = (1000..10000).random().toDouble(),
@@ -36,12 +35,18 @@ internal class BudgetRepositoryMemoryImpl: BudgetRepository {
 
     private val budgetsState = MutableStateFlow<List<Budget>>(emptyList())
 
-    private var budgetId: String = ""
+    private var budgetId: Long = 0
     private val budgetState = MutableStateFlow<Budget?>(null)
 
-    private var categoryBudgetId: String = ""
+    private var categoryBudgetId: Long = 0
 
     private val categoriesState = MutableStateFlow<List<BudgetCategory>>(emptyList())
+
+    private var lastBudgetId: Long = 0
+
+    private var lastCategoryId: Long = 0
+
+    private var lastExpenseId: Long = 0
 
     private fun updateBudgetsState() {
         Log.i("BudgetRepositoryMemoryImpl", "updateBudgetsState")
@@ -63,8 +68,8 @@ internal class BudgetRepositoryMemoryImpl: BudgetRepository {
 
     override suspend fun createBudget(budget: Budget): Budget = withContext(Dispatchers.IO) {
         val totalAllocation = budget.categories.sumOf { it.allocation }
-        val categories = budget.categories.map { it.copy(id = UUID.randomUUID().toString()) }
-        val copy = budget.copy(id = UUID.randomUUID().toString(),
+        val categories = budget.categories.map { it.copy(id = lastBudgetId++) }
+        val copy = budget.copy(id = lastCategoryId++,
             totalAllocation = totalAllocation,
             categories = categories
         )
@@ -73,7 +78,7 @@ internal class BudgetRepositoryMemoryImpl: BudgetRepository {
         copy
     }
 
-    override fun observeBudgetById(id: String): Flow<Budget?> {
+    override fun observeBudgetById(id: Long): Flow<Budget?> {
         budgetId = id
         updateBudgetState()
         return budgetState
@@ -97,7 +102,7 @@ internal class BudgetRepositoryMemoryImpl: BudgetRepository {
 
     override suspend fun addCategory(category: BudgetCategory): BudgetCategory = withContext(Dispatchers.IO) {
         budgets[category.budgetId]?.let { budget ->
-            val copy = category.copy(id = UUID.randomUUID().toString())
+            val copy = category.copy(id = lastCategoryId++)
             budgets[budget.id] = budget.copy(
                 totalAllocation = budget.totalAllocation + copy.allocation,
                 categories = budget.categories + copy
@@ -107,7 +112,7 @@ internal class BudgetRepositoryMemoryImpl: BudgetRepository {
         } ?: throw Exception()
     }
 
-    override fun observeBudgetCategoriesForBudget(budgetId: String): Flow<List<BudgetCategory>> {
+    override fun observeBudgetCategoriesForBudget(budgetId: Long): Flow<List<BudgetCategory>> {
         categoryBudgetId = budgetId
         updateCategoriesState()
         return categoriesState
@@ -125,7 +130,7 @@ internal class BudgetRepositoryMemoryImpl: BudgetRepository {
             val categories = budget.categories.toMutableList()
             val categoryIndex = categories.indexOfFirst { it.id == categoryId }
             if (categoryIndex < 0) return@let null
-            val copy = expense.copy(id = UUID.randomUUID().toString())
+            val copy = expense.copy(id = lastExpenseId++)
             val category = categories[categoryIndex]
             categories[categoryIndex] = category.copy(totalExpense = category.totalExpense + expense.amount)
             budgets[budgetId] = budget.copy(
@@ -137,7 +142,7 @@ internal class BudgetRepositoryMemoryImpl: BudgetRepository {
         } ?: throw Exception()
     }
 
-    override fun observeExpensesForCategory(categoryId: String): Flow<List<Expense>> = flowOf(emptyList())
+    override fun observeExpensesForCategory(categoryId: Long): Flow<List<Expense>> = flowOf(emptyList())
 
     override suspend fun editExpense(expense: Expense): Expense? = expense.copy()
 

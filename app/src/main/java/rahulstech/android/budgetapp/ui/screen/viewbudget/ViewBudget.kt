@@ -73,7 +73,7 @@ private const val TAG = "ViewBudget"
 
 
 @Composable
-fun ViewBudgetRoute(budgetId: String,
+fun ViewBudgetRoute(budgetId: Long,
                     snackBarCallback: SnackBarCallback,
                     navigateTo: NavigationCallback,
                     viewModel: ViewBudgetViewModel = hiltViewModel(),
@@ -225,7 +225,7 @@ fun ViewBudgetRoute(budgetId: String,
             onDismiss = { viewModel.updateExpenseDialogState(ExpenseDialogState()) },
             onSaveExpense = { expense ->
                 // ExpenseDialog already set the budgetId and categoryId to the expense
-                viewModel.updateExpenseDialogState(expenseDialogState.copy(enabled = false, expense = expense))
+                viewModel.updateExpenseDialogState(expenseDialogState.copy(isSaving = true, expense = expense))
                 viewModel.addExpense(expense)
             }
         )
@@ -449,15 +449,15 @@ fun CategoryCard(category: BudgetCategory,
 fun BudgetDetailsScreenPreview() {
     ViewBudgetScreen(
         budget = Budget(
-            id = "1",
+            id = 1,
             name = "Darjeeling Tour",
             details = "Budget for Darjeeling tour of me and Rivu in February, 2026",
             totalExpense = 7000.0,
             totalAllocation = 15000.0,
             categories = listOf(
                 BudgetCategory(
-                    id = "1",
-                    budgetId = "1",
+                    id = 1,
+                    budgetId = 1,
                     name = "Travelling",
                     note = "All cost of travelling",
                     allocation = 9000.0,
@@ -465,8 +465,8 @@ fun BudgetDetailsScreenPreview() {
                 ),
 
                 BudgetCategory(
-                    id = "2",
-                    budgetId = "1",
+                    id = 2,
+                    budgetId = 1,
                     name = "This is a very long name of the category to test how long text it can contain",
                     note = "A very very very very very very very very very very very long note for the category to test how long text it  can fit",
                     allocation = 3000.0,
@@ -474,8 +474,8 @@ fun BudgetDetailsScreenPreview() {
                 ),
 
                 BudgetCategory(
-                    id = "3",
-                    budgetId = "1",
+                    id = 3,
+                    budgetId = 1,
                     name = "Hotels",
                     note = "All cost of hotels",
                     allocation = 7500.0,

@@ -164,28 +164,28 @@ fun BudgetListScreenPreview() {
     BudgetListScreen(
         budgets = listOf(
             Budget(
-                id = "1",
+                id = 1,
                 name = "Travel to Darjeeling",
                 totalExpense = 1500.0,
                 totalAllocation = 2000.0
             ),
 
             Budget(
-                id = "2",
+                id = 2,
                 name = "Travel to Mandarmanee",
                 totalExpense = 1600.0,
                 totalAllocation = 3600.0
             ),
 
             Budget(
-                id = "3",
+                id = 3,
                 name = "Travel to Gangotree",
                 totalExpense = 4500.0,
                 totalAllocation = 3000.0
             ),
 
             Budget(
-                id = "4",
+                id = 4,
                 name = "Travel to Gangtok",
                 totalExpense = 0.0,
                 totalAllocation = 3000.0

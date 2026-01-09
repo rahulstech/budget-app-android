@@ -31,8 +31,8 @@ sealed interface ViewBudgetUIEvent {
     ): ViewBudgetUIEvent
 
     data class ViewExpenses(
-        val budgetId: String,
-        val categoryId: String? = null
+        val budgetId: Long,
+        val categoryId: Long? = null
     ): ViewBudgetUIEvent
 }
 

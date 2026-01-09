@@ -50,8 +50,8 @@ import java.util.concurrent.TimeUnit
 
 data class ExpenseDialogState(
     val showDialog: Boolean = false,
-    val enabled: Boolean = true,
-    val isNewExpense: Boolean = true,
+    val isSaving: Boolean = false,
+    val isEditing: Boolean = false,
     val category: BudgetCategory = BUDGET_CATEGORY_PLACEHOLDER,
     val expense: Expense = EXPENSE_PLACEHOLDER,
 )
@@ -69,7 +69,7 @@ fun ExpenseDialog(onDismiss: ()-> Unit,
                   expenseDialogState: ExpenseDialogState
                   )
 {
-    val enabled = expenseDialogState.enabled
+    val enabled = !expenseDialogState.isSaving
     val category = expenseDialogState.category
     val initialExpense = expenseDialogState.expense
     var amount by rememberSaveable { mutableStateOf(initialExpense.amount.toString()) }
@@ -123,7 +123,7 @@ fun ExpenseDialog(onDismiss: ()-> Unit,
                     enabled = enabled && amount.isNotEmpty(),
                     onClick = {
                         val expense = Expense(
-                            id = if (expenseDialogState.isNewExpense) "" else initialExpense.id,
+                            id = if (expenseDialogState.isEditing) initialExpense.id else 0,
                             budgetId = category.budgetId,
                             categoryId = category.id,
                             amount = amount.toDoubleOrNull() ?: 0.0,
