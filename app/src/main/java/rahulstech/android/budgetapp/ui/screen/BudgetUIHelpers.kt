@@ -6,6 +6,6 @@ import rahulstech.android.budgetapp.repository.model.Expense
 
 val BUDGET_PLACEHOLDER get() = Budget(name = "")
 
-val BUDGET_CATEGORY_PLACEHOLDER get() = BudgetCategory(budgetId = "", name = "")
+val BUDGET_CATEGORY_PLACEHOLDER get() = BudgetCategory(budgetId = 0, name = "")
 
-val EXPENSE_PLACEHOLDER get() = Expense(budgetId = "", categoryId = "")
+val EXPENSE_PLACEHOLDER get() = Expense(budgetId = 0, categoryId = 0)

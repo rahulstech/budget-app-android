@@ -46,6 +46,8 @@ class CreateBudgetViewModel @Inject constructor(val repo: BudgetRepository): Vie
     // ui state
 
     private val _createBudgetUiState = MutableStateFlow(CreateBudgetUIState())
+
+    private var lastCategoryId: Long = 0
     val createBudgetUIState: StateFlow<CreateBudgetUIState> = _createBudgetUiState.asStateFlow()
 
     fun updateBudget(budget: Budget) {
@@ -55,10 +57,10 @@ class CreateBudgetViewModel @Inject constructor(val repo: BudgetRepository): Vie
     fun saveCategory(category: BudgetCategory) {
         val currentState = _createBudgetUiState.value
         val categories = currentState.categories
-        if (category.id.isBlank()) {
+        if (category.id == 0L) {
             // save new
             _createBudgetUiState.value = currentState.copy(
-                categories = categories + category.copy(id = UUID.randomUUID().toString())
+                categories = categories + category.copy(id = lastCategoryId++)
             )
         }
         else {

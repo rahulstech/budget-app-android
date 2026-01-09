@@ -9,7 +9,7 @@ interface BudgetRepository {
 
     suspend fun createBudget(budget: Budget): Budget
 
-    fun observeBudgetById(id: String): Flow<Budget?>
+    fun observeBudgetById(id: Long): Flow<Budget?>
 
     fun observeAllBudgets(): Flow<List<Budget>>
 
@@ -19,7 +19,7 @@ interface BudgetRepository {
 
     suspend fun addCategory(category: BudgetCategory): BudgetCategory
 
-    fun observeBudgetCategoriesForBudget(budgetId: String): Flow<List<BudgetCategory>>
+    fun observeBudgetCategoriesForBudget(budgetId: Long): Flow<List<BudgetCategory>>
 
     suspend fun editCategory(category: BudgetCategory): BudgetCategory?
 
@@ -27,7 +27,7 @@ interface BudgetRepository {
 
     suspend fun addExpense(expense: Expense): Expense
 
-    fun observeExpensesForCategory(categoryId: String): Flow<List<Expense>>
+    fun observeExpensesForCategory(categoryId: Long): Flow<List<Expense>>
 
     suspend fun editExpense(expense: Expense): Expense?
 

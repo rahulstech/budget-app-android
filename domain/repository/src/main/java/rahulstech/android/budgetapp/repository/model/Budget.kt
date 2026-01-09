@@ -1,9 +1,7 @@
 package rahulstech.android.budgetapp.repository.model
 
-import java.math.BigDecimal
-
 data class Budget(
-    val id: String = "",
+    val id: Long = 0,
     val name: String,
     val details: String = "",
     val totalAllocation: Double = 0.0,
