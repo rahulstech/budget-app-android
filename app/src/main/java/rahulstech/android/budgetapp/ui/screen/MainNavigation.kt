@@ -1,5 +1,6 @@
 package rahulstech.android.budgetapp.ui.screen
 
+import android.os.Bundle
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -19,15 +20,19 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.core.os.bundleOf
 import androidx.navigation.NavController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import androidx.navigation.navOptions
 import kotlinx.coroutines.launch
+import rahulstech.android.budgetapp.ui.screen.budgetlist.BudgetListRoute
 import rahulstech.android.budgetapp.ui.screen.createbudet.CreateBudgetRoute
 import rahulstech.android.budgetapp.ui.screen.viewbudget.ViewBudgetRoute
+import rahulstech.android.budgetapp.ui.screen.viewexpenses.ViewExpensesRoute
 
 enum class Screen(val route: String) {
     BudgetList("budgets"),
@@ -38,41 +43,66 @@ enum class Screen(val route: String) {
 
     ViewBudgetCategory("budgetCategories/{categoryId}"),
 
+    ViewExpenses("budgets/{budgetId}/expenses?categoryId={categoryId}")
+
     ;
 
     fun create(args: ScreenArgs): String  {
         return when(this) {
-            ViewBudget -> "budgets/${args.budgetId}"
-            ViewBudgetCategory -> "budgetCategories/${args.categoryId}"
+            ViewBudget -> "budgets/${args.budgetId ?: ""}"
+            ViewBudgetCategory -> "budgetCategories/${args.categoryId ?: ""}"
+            ViewExpenses -> {
+                val queries = buildString {
+                    if (!args.categoryId.isNullOrBlank()) {
+                        append("categoryId=${args.categoryId}")
+                    }
+                }
+                buildString {
+                    append("budgets/${args.budgetId}/expenses")
+                    if (queries.isNotBlank()) {
+                        append("?")
+                        append(queries)
+                    }
+                }
+            }
             else -> route
         }
     }
 }
 
 data class ScreenArgs(
-    val budgetId: String = "",
-    val categoryId: String = ""
+    val budgetId: String? = null,
+    val categoryId: String? = null
 )
 
-data class NavigationEvent(
-    val screen: Screen,
-    val args: ScreenArgs = ScreenArgs(),
-)
+sealed class NavigationEvent {
+
+    data class ForwardTo(
+        val screen: Screen,
+        val args: ScreenArgs = ScreenArgs(),
+        val popCurrent: Boolean = false
+    ): NavigationEvent()
+
+    data class Exit(val result: Bundle = bundleOf()): NavigationEvent()
+}
 
 typealias NavigationCallback = (NavigationEvent)-> Unit
 
 fun handleNavigateTo(navController: NavController,
                      event: NavigationEvent)
 {
-    val route = event.screen.create(event.args)
-    navController.navigate(route)
-}
-
-typealias ExitCallback = ()-> Unit
-
-fun handleExitScreen(navController: NavController)
-{
-    navController.popBackStack()
+    when(event) {
+        is NavigationEvent.ForwardTo -> {
+            val route = event.screen.create(event.args)
+            if (event.popCurrent) {
+                navController.popBackStack()
+            }
+            navController.navigate(route)
+        }
+        is NavigationEvent.Exit -> {
+            navController.popBackStack()
+        }
+    }
 }
 
 data class SnackBarAction(
@@ -128,7 +158,9 @@ fun RouteContent(content: @Composable (SnackBarCallback)-> Unit) {
         },
     ) { innerPadding ->
         Box(
-            modifier = Modifier.fillMaxSize().padding(innerPadding),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding),
             contentAlignment = Alignment.TopCenter
         ) {
             Box(
@@ -161,7 +193,7 @@ fun MainNavigation() {
                 route = Screen.BudgetList.route
             ) {
                 BudgetListRoute(
-                    navigateTo = { handleNavigateTo(navController,it) }
+                    navigateTo = { handleNavigateTo(navController, it) }
                 )
             }
 
@@ -171,7 +203,6 @@ fun MainNavigation() {
             ) {
                 CreateBudgetRoute(
                     snackBarCallback = snackBarCallback,
-                    exitScreen = { handleExitScreen(navController) },
                     navigateTo = { handleNavigateTo(navController, it) }
                 )
             }
@@ -188,8 +219,30 @@ fun MainNavigation() {
                 ViewBudgetRoute(
                     budgetId = budgetId,
                     snackBarCallback = snackBarCallback,
-                    navigateToCallback = { handleNavigateTo(navController, it) },
-                    exitScreenCallback = { handleExitScreen(navController) }
+                    navigateTo = { handleNavigateTo(navController, it) },
+                )
+            }
+
+            // view expenses
+            composable(
+                route = Screen.ViewExpenses.route,
+                arguments = listOf(
+                    navArgument("budgetId") {
+                        type = NavType.StringType
+                    },
+                    navArgument("categoryId") {
+                        type = NavType.StringType
+                        defaultValue = ""
+                    }
+                )
+            ) { backStackEntry ->
+                val budgetId = backStackEntry.arguments?.getString("budgetId")!!
+                val categoryId = backStackEntry.arguments?.getString("categoryId")
+                ViewExpensesRoute(
+                    budgetId = budgetId,
+                    categoryId = categoryId,
+                    snackBarCallback = snackBarCallback,
+                    navigateTo = { handleNavigateTo(navController, it) }
                 )
             }
         }

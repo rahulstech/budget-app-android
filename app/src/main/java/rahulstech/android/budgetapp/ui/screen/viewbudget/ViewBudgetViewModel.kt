@@ -29,10 +29,13 @@ class ViewBudgetViewModel @Inject constructor(
     val repo: BudgetRepository
 ): ViewModel()
 {
-
     // observe budget
     private val _budgetState = MutableStateFlow<UIState<Budget>>(UIState.Idle())
-    val budgetState = _budgetState.asStateFlow()
+    val budgetState: StateFlow<UIState<Budget>> = _budgetState.asStateFlow()
+
+//    private val _categoriesState = MutableStateFlow<UIState<List<BudgetCategory>>>(UIState.Idle())
+//
+//    val categoryState: StateFlow<UIState<List<BudgetCategory>>> = _categoriesState.asStateFlow()
 
     fun observeBudget(id: String) {
         viewModelScope.launch {
@@ -45,6 +48,11 @@ class ViewBudgetViewModel @Inject constructor(
                         null -> UIState.NotFound()
                         else -> UIState.Success(budget)
                     }
+//                    if (null != budget) {
+//                        repo.observeBudgetCategoriesForBudget(id)
+//                            .onStart { _categoriesState.value = UIState.Loading() }
+//                            .collectLatest { _categoriesState.value = UIState.Success(it) }
+//                    }
                 }
         }
     }

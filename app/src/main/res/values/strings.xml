@@ -30,6 +30,7 @@
     <string name="title_edit_budget">Edit Budget</string>
     <string name="title_new_budget_category">New Category</string>
     <string name="title_add_expense">Add Expense</string>
+    <string name="title_view_expenses">Expenses</string>
 
     <string name="message_remove_category">remove %1$s</string>
     <string name="message_edit_category">edit %1$s</string>
@@ -45,5 +46,8 @@
     <string name="message_budget_category_save_error">Something error occurred, category not saved</string>
     <string name="message_expense_add_successful">Expense added</string>
     <string name="message_budget_not_found">Budget not found</string>
+    <string name="message_navigate_up">navigate up</string>
+    <string name="mesage_filter_expenses">filter expenses</string>
+
 
 </resources>

@@ -39,6 +39,10 @@ internal class BudgetRepositoryMemoryImpl: BudgetRepository {
     private var budgetId: String = ""
     private val budgetState = MutableStateFlow<Budget?>(null)
 
+    private var categoryBudgetId: String = ""
+
+    private val categoriesState = MutableStateFlow<List<BudgetCategory>>(emptyList())
+
     private fun updateBudgetsState() {
         Log.i("BudgetRepositoryMemoryImpl", "updateBudgetsState")
         budgetsState.value = budgets.values.toList()
@@ -49,6 +53,9 @@ internal class BudgetRepositoryMemoryImpl: BudgetRepository {
         budgetState.value = budgets[budgetId]
     }
 
+    private fun updateCategoriesState() {
+        categoriesState.value = budgets[categoryBudgetId]?.categories ?: emptyList()
+    }
 
     init {
         updateBudgetsState()
@@ -100,6 +107,12 @@ internal class BudgetRepositoryMemoryImpl: BudgetRepository {
         } ?: throw Exception()
     }
 
+    override fun observeBudgetCategoriesForBudget(budgetId: String): Flow<List<BudgetCategory>> {
+        categoryBudgetId = budgetId
+        updateCategoriesState()
+        return categoriesState
+    }
+
     override suspend fun editCategory(category: BudgetCategory): BudgetCategory? = category
 
     override suspend fun removeCategory(category: BudgetCategory) {}
@@ -124,11 +137,9 @@ internal class BudgetRepositoryMemoryImpl: BudgetRepository {
         } ?: throw Exception()
     }
 
-    override fun observeExpenseForCategory(categoryId: String): Flow<List<Expense>> = flowOf(emptyList())
+    override fun observeExpensesForCategory(categoryId: String): Flow<List<Expense>> = flowOf(emptyList())
 
     override suspend fun editExpense(expense: Expense): Expense? = expense.copy()
 
-    override suspend fun removeExpense(expense: Expense) {
-
-    }
+    override suspend fun removeExpense(expense: Expense) {}
 }

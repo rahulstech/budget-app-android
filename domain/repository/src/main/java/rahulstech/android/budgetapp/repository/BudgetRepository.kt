@@ -19,13 +19,15 @@ interface BudgetRepository {
 
     suspend fun addCategory(category: BudgetCategory): BudgetCategory
 
+    fun observeBudgetCategoriesForBudget(budgetId: String): Flow<List<BudgetCategory>>
+
     suspend fun editCategory(category: BudgetCategory): BudgetCategory?
 
     suspend fun removeCategory(category: BudgetCategory)
 
     suspend fun addExpense(expense: Expense): Expense
 
-    fun observeExpenseForCategory(categoryId: String): Flow<List<Expense>>
+    fun observeExpensesForCategory(categoryId: String): Flow<List<Expense>>
 
     suspend fun editExpense(expense: Expense): Expense?
 
