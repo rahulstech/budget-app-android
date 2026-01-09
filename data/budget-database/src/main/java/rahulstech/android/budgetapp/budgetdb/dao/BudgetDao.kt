@@ -1,0 +1,31 @@
+package rahulstech.android.budgetapp.budgetdb.dao
+
+import androidx.paging.PagingSource
+import androidx.room.Dao
+import androidx.room.Delete
+import androidx.room.Insert
+import androidx.room.Query
+import androidx.room.Update
+import kotlinx.coroutines.flow.Flow
+import rahulstech.android.budgetapp.budgetdb.entity.BudgetEntity
+import rahulstech.android.budgetapp.budgetdb.model.BudgetListModel
+import rahulstech.android.budgetapp.budgetdb.model.BudgetModel
+
+@Dao
+interface BudgetDao {
+
+    @Insert
+    suspend fun insert(budget: BudgetEntity): Long
+
+    @Query("SELECT `id`,`name`,`details`,`totalAllocation`,`totalExpense` FROM `budgets` WHERE `id` = :id")
+    fun observeBudgetById(id: Long): Flow<BudgetModel?>
+
+    @Query("SELECT `id`,`name`,`totalAllocation`,`totalExpense` FROM `budgets`")
+    fun observerAllBudgets(): Flow<PagingSource<Int, BudgetListModel>>
+
+    @Update
+    suspend fun update(budget: BudgetEntity)
+
+    @Delete
+    fun delete(budget: BudgetEntity)
+}

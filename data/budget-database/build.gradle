@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace 'rahulstech.android.budgetapp.repository'
+    namespace 'rahulstech.android.budgetapp.budgetdb'
     compileSdk 36
 
     defaultConfig {
@@ -26,19 +26,33 @@ android {
         targetCompatibility JavaVersion.VERSION_11
     }
     kotlinOptions {
-        jvmTarget = "11"
+        jvmTarget = '11'
     }
+
     kapt {
+        arguments {
+            arg('room.schemaLocation', "$projectDir/schemas")
+        }
         correctErrorTypes true
+    }
+
+    sourceSets {
+        androidTest.assets.srcDirs += "$projectDir/schemas"
     }
 }
 
 dependencies {
-
-    implementation project(":data:budget-database")
-
     implementation libs.androidx.core.ktx
     implementation libs.androidx.appcompat
+
+    // room
+    api libs.room.runtime
+    implementation libs.room.ktx
+    kapt libs.room.compiler
+    androidTestImplementation libs.room.testing
+
+    // paging
+    implementation libs.paging.runtime
 
     // hilt
     implementation libs.hilt.android
