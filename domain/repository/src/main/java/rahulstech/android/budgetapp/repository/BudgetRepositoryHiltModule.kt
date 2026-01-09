@@ -4,7 +4,8 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
-import rahulstech.android.budgetapp.repository.impl.BudgetRepositoryMemoryImpl
+import rahulstech.android.budgetapp.budgetdb.IBudgetDB
+import rahulstech.android.budgetapp.repository.impl.BudgetRepositoryImpl
 import javax.inject.Singleton
 
 @Module
@@ -13,5 +14,5 @@ object BudgetRepositoryHiltModule {
 
     @Provides
     @Singleton
-    fun budgetRepository(): BudgetRepository = BudgetRepositoryMemoryImpl()
+    fun budgetRepository(db: IBudgetDB): BudgetRepository = BudgetRepositoryImpl(db)
 }
