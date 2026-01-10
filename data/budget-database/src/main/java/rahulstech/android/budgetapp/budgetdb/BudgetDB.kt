@@ -6,6 +6,8 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverter
 import androidx.room.TypeConverters
+import androidx.room.withTransaction
+import kotlinx.coroutines.coroutineScope
 import rahulstech.android.budgetapp.budgetdb.dao.BudgetCategoryDao
 import rahulstech.android.budgetapp.budgetdb.dao.BudgetDao
 import rahulstech.android.budgetapp.budgetdb.dao.ExpenseDao
@@ -15,9 +17,9 @@ import rahulstech.android.budgetapp.budgetdb.entity.ExpenseEntity
 
 interface IBudgetDB {
 
-    fun runInTransaction(queries: ()-> Unit)
+    suspend fun runInTransaction(queries: suspend ()-> Unit)
 
-    fun <T> runInTransaction(queries: ()-> T): T
+    suspend fun <T> runInTransaction(queries: suspend ()-> T): T
 
     val budgetDao: BudgetDao
 
@@ -43,9 +45,11 @@ abstract class BudgetDB: IBudgetDB, RoomDatabase() {
                 .build()
     }
 
-    override fun runInTransaction(queries: () -> Unit) =
-        super<RoomDatabase>.runInTransaction(body = queries)
+    override suspend fun runInTransaction(queries: suspend () -> Unit) =
+        coroutineScope { withTransaction(queries) }
 
-    override fun <T> runInTransaction(queries: () -> T): T =
-        super<RoomDatabase>.runInTransaction(queries)
+
+    override suspend fun <T> runInTransaction(queries: suspend () -> T): T =
+        coroutineScope { withTransaction(queries) }
+
 }
