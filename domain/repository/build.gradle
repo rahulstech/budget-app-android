@@ -44,6 +44,10 @@ dependencies {
     implementation libs.hilt.android
     kapt libs.hilt.compiler
 
+    // paging
+    implementation libs.paging.runtime
+    implementation libs.paging.runtime.ktx
+
     // test
     testImplementation libs.junit
     androidTestImplementation libs.androidx.junit

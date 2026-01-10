@@ -17,8 +17,6 @@ import rahulstech.android.budgetapp.budgetdb.entity.ExpenseEntity
 
 interface IBudgetDB {
 
-    suspend fun runInTransaction(queries: suspend ()-> Unit)
-
     suspend fun <T> runInTransaction(queries: suspend ()-> T): T
 
     val budgetDao: BudgetDao
@@ -44,10 +42,6 @@ abstract class BudgetDB: IBudgetDB, RoomDatabase() {
             Room.databaseBuilder(context.applicationContext, BudgetDB::class.java, DB_NAME)
                 .build()
     }
-
-    override suspend fun runInTransaction(queries: suspend () -> Unit) =
-        coroutineScope { withTransaction(queries) }
-
 
     override suspend fun <T> runInTransaction(queries: suspend () -> T): T =
         coroutineScope { withTransaction(queries) }
