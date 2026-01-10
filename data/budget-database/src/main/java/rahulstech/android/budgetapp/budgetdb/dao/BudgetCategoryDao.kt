@@ -9,7 +9,6 @@ import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 import rahulstech.android.budgetapp.budgetdb.entity.BudgetCategoryEntity
 import rahulstech.android.budgetapp.budgetdb.model.BudgetCategoryListModel
-import rahulstech.android.budgetapp.budgetdb.model.BudgetCategoryModel
 
 @Dao
 interface BudgetCategoryDao {
@@ -18,10 +17,10 @@ interface BudgetCategoryDao {
     suspend fun insert(category: BudgetCategoryEntity): Long
 
     @Query("SELECT * FROM `categories` WHERE `id`= :id")
-    fun observeCategoryById(id: Long): Flow<BudgetCategoryModel?>
+    fun observeCategoryById(id: Long): Flow<BudgetCategoryEntity?>
 
     @Query("SELECT `id`,`budgetId`,`name`,`allocation`, `totalExpense` FROM `categories` WHERE `budgetId` = :budgetId")
-    fun observeCategoriesOfBudget(budgetId: String): Flow<PagingSource<Int, BudgetCategoryListModel>>
+    fun observeCategoriesOfBudget(budgetId: Long): Flow<List<BudgetCategoryListModel>>
 
     @Update
     suspend fun update(category: BudgetCategoryEntity)

@@ -16,13 +16,13 @@ data class ExpenseModel(
 
 data class ExpenseWithCategoryModel(
     @Embedded
-    val expenseModel: ExpenseModel,
+    val expense: ExpenseModel,
 
     @Relation(
         entity = BudgetCategoryEntity::class,
         entityColumn = "id",
         parentColumn = "categoryId",
-        projection = ["id", "budgetId", "categoryId"]
+        projection = ["id", "budgetId", "name"]
     )
     val categoryName: BudgetCategoryNameModel
 )

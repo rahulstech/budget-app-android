@@ -1,5 +1,6 @@
 package rahulstech.android.budgetapp.budgetdb.entity
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
@@ -27,12 +28,11 @@ import java.time.LocalDateTime
 )
 data class BudgetCategoryEntity(
     @PrimaryKey(autoGenerate = true)
-    val id: Long,
+    val id: Long = 0,
     val budgetId: Long,
-    val name: String? = null,
-    val note: String,
-    val allocation: Double,
-    val totalExpense: Double,
-    @TypeConverters(Converters::class)
-    val lastModified: LocalDateTime = LocalDateTime.now(),
+    val name: String,
+    val note: String = "",
+    val allocation: Double = 0.0,
+    val totalExpense: Double = 0.0,
+    val lastModified: Long = System.currentTimeMillis(),
 )

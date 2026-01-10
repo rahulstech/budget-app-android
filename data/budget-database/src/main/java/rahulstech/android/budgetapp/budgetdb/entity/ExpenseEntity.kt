@@ -1,12 +1,13 @@
 package rahulstech.android.budgetapp.budgetdb.entity
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
+import androidx.room.PrimaryKey
 import androidx.room.TypeConverters
 import rahulstech.android.budgetapp.budgetdb.Converters
 import java.time.LocalDate
-import java.time.LocalDateTime
 
 @Entity(
     tableName = "expenses",
@@ -36,13 +37,14 @@ import java.time.LocalDateTime
     ]
 )
 data class ExpenseEntity(
-    val id: Long,
+    @PrimaryKey(autoGenerate = true)
+    val id: Long = 0,
     val budgetId: Long,
     val categoryId: Long,
-    val amount: Double,
+    val amount: Double = 0.0,
     @TypeConverters(Converters::class)
-    val date: LocalDate,
+    @ColumnInfo(typeAffinity = ColumnInfo.INTEGER)
+    val date: LocalDate = LocalDate.now(),
     val note: String? = null,
-    @TypeConverters(Converters::class)
-    val lastModified: LocalDateTime = LocalDateTime.now(),
+    val lastModified: Long = System.currentTimeMillis(),
 )

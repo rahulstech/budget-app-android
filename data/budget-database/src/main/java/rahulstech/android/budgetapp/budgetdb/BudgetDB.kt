@@ -4,6 +4,8 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.TypeConverter
+import androidx.room.TypeConverters
 import rahulstech.android.budgetapp.budgetdb.dao.BudgetCategoryDao
 import rahulstech.android.budgetapp.budgetdb.dao.BudgetDao
 import rahulstech.android.budgetapp.budgetdb.dao.ExpenseDao
@@ -28,6 +30,7 @@ interface IBudgetDB {
     version = BudgetDB.DB_VERSION,
     entities = [BudgetEntity::class, BudgetCategoryEntity::class, ExpenseEntity::class],
 )
+@TypeConverters(Converters::class)
 abstract class BudgetDB: IBudgetDB, RoomDatabase() {
 
     companion object {
