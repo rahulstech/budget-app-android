@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -34,6 +35,7 @@ import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -150,6 +152,13 @@ fun CreateBudgetScreen(uiState: CreateBudgetUIState,
     Scaffold(
         topBar = {
             TopAppBar(
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    scrolledContainerColor = MaterialTheme.colorScheme.primary,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary,
+                    actionIconContentColor = MaterialTheme.colorScheme.onPrimary,
+                ),
                 title = {
                     Text(
                         text = stringResource(R.string.title_new_budget),
@@ -157,7 +166,7 @@ fun CreateBudgetScreen(uiState: CreateBudgetUIState,
                     )
                 },
                 actions = {
-                    TextButton(
+                    IconButton(
                         enabled = !uiState.isSaving && uiState.canSave, // TODO: remove category non-empty check
                         onClick = {
                             onUIEvent(
@@ -167,7 +176,7 @@ fun CreateBudgetScreen(uiState: CreateBudgetUIState,
                             )
                         }
                     ) {
-                        Text(text = stringResource(R.string.label_save))
+                        Icon(Icons.Default.Check, stringResource(R.string.label_save))
                     }
                 },
                 navigationIcon = {

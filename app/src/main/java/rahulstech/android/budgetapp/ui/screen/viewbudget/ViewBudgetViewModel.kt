@@ -29,30 +29,53 @@ class ViewBudgetViewModel @Inject constructor(
     val repo: BudgetRepository
 ): ViewModel()
 {
-    // observe budget
-    private val _budgetState = MutableStateFlow<UIState<Budget>>(UIState.Idle())
-    val budgetState: StateFlow<UIState<Budget>> = _budgetState.asStateFlow()
+    // observe budget and categories
+    private val _viewBudgetUIState = MutableStateFlow(ViewBudgetUIState())
+    val viewBudgetUIState: StateFlow<ViewBudgetUIState> = _viewBudgetUIState.asStateFlow()
 
-//    private val _categoriesState = MutableStateFlow<UIState<List<BudgetCategory>>>(UIState.Idle())
-//
-//    val categoryState: StateFlow<UIState<List<BudgetCategory>>> = _categoriesState.asStateFlow()
+    private var observeCategoriesStarted: Boolean = false
 
     fun observeBudget(id: Long) {
         viewModelScope.launch {
             repo.observeBudgetById(id)
-                .onStart { _budgetState.value = UIState.Loading() }
-                .catch { cause -> _budgetState.value = UIState.Error(cause) }
+                .onStart {
+                    _viewBudgetUIState.value = ViewBudgetUIState(UIState.Loading(), UIState.Loading())
+                    observeCategoriesStarted = false
+                }
+                .catch {
+                    _viewBudgetUIState.value = ViewBudgetUIState(UIState.Error(it), UIState.Idle())
+                }
                 .collectLatest { budget ->
                     Log.i(TAG, "budget refreshed")
-                    _budgetState.value = when(budget) {
-                        null -> UIState.NotFound()
-                        else -> UIState.Success(budget)
+                    if (null == budget) {
+                        _viewBudgetUIState.value = ViewBudgetUIState(UIState.NotFound(), UIState.NotFound())
                     }
-//                    if (null != budget) {
-//                        repo.observeBudgetCategoriesForBudget(id)
-//                            .onStart { _categoriesState.value = UIState.Loading() }
-//                            .collectLatest { _categoriesState.value = UIState.Success(it) }
-//                    }
+                    else {
+                        _viewBudgetUIState.value =
+                            _viewBudgetUIState.value.copy(budgetState = UIState.Success(budget))
+                        if (!observeCategoriesStarted) {
+                            observeCategories(id)
+                        }
+                    }
+                }
+        }
+    }
+
+    private fun observeCategories(budgetId: Long) {
+        viewModelScope.launch {
+            repo.observeBudgetCategoriesForBudget(budgetId)
+                .onStart {
+                    observeCategoriesStarted = true
+                }
+                .catch {
+                    _viewBudgetUIState.value = _viewBudgetUIState.value.copy(categoryState = UIState.Error(it))
+                }
+                .collectLatest { categories ->
+                    Log.i(TAG, "categories refreshed")
+                    _viewBudgetUIState.value = when {
+                        categories.isEmpty() -> _viewBudgetUIState.value.copy(categoryState = UIState.NotFound())
+                        else -> _viewBudgetUIState.value.copy(categoryState = UIState.Success(categories))
+                    }
                 }
         }
     }

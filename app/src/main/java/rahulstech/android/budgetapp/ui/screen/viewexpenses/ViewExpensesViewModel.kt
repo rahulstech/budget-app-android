@@ -7,6 +7,4 @@ import javax.inject.Inject
 
 @HiltViewModel
 class ViewExpensesViewModel @Inject constructor(val repo: BudgetRepository): ViewModel() {
-
-
 }

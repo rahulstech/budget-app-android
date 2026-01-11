@@ -5,24 +5,24 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 
-sealed class UIState<out T>{
+sealed interface UIState<out T>{
 
-    class Idle(): UIState<Nothing>()
+    class Idle(): UIState<Nothing>
 
-    data class Loading(val progress: Int = -1, val max: Int = -1, val extras: Map<String,Any?> = emptyMap()): UIState<Nothing>()
+    data class Loading(val progress: Int = -1, val max: Int = -1, val extras: Any? = null): UIState<Nothing>
 
-    data class Success<T>(val data: T): UIState<T>()
+    data class Success<T>(val data: T): UIState<T>
 
-    class NotFound(): UIState<Nothing>()
+    data class NotFound(val data: Any? = null): UIState<Nothing>
 
-    data class Error(val cause: Throwable? = null): UIState<Nothing>()
+    data class Error(val cause: Throwable? = null): UIState<Nothing>
 }
 
 class UIAction<A,R>(
     val action: suspend (A)-> R?,
-    val converter: (A,R?)-> UIState<R> = { _,result ->
+    val converter: (A,R?)-> UIState<R> = { args,result ->
         when(result) {
-            null -> UIState.NotFound()
+            null -> UIState.NotFound(args)
             else -> UIState.Success(result)
         }
     }

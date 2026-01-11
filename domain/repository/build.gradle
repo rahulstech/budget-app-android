@@ -45,8 +45,8 @@ dependencies {
     kapt libs.hilt.compiler
 
     // paging
-    implementation libs.paging.runtime
-    implementation libs.paging.runtime.ktx
+    api libs.paging.runtime
+    api libs.paging.runtime.ktx
 
     // test
     testImplementation libs.junit

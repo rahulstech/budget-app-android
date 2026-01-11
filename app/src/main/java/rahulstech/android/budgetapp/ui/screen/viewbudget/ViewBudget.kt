@@ -2,6 +2,7 @@ package rahulstech.android.budgetapp.ui.screen.viewbudget
 
 import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -9,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
@@ -22,7 +24,6 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -39,12 +40,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Devices.PIXEL
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -61,6 +61,7 @@ import rahulstech.android.budgetapp.ui.components.BudgetDialogState
 import rahulstech.android.budgetapp.ui.components.ExpenseDialog
 import rahulstech.android.budgetapp.ui.components.ExpenseDialogState
 import rahulstech.android.budgetapp.ui.components.ExpenseLinearProgress
+import rahulstech.android.budgetapp.ui.components.shimmer
 import rahulstech.android.budgetapp.ui.screen.NavigationCallback
 import rahulstech.android.budgetapp.ui.screen.NavigationEvent
 import rahulstech.android.budgetapp.ui.screen.Screen
@@ -68,6 +69,7 @@ import rahulstech.android.budgetapp.ui.screen.ScreenArgs
 import rahulstech.android.budgetapp.ui.screen.SnackBarCallback
 import rahulstech.android.budgetapp.ui.screen.SnackBarEvent
 import rahulstech.android.budgetapp.ui.screen.UIState
+import rahulstech.android.budgetapp.ui.theme.tileColors
 
 private const val TAG = "ViewBudget"
 
@@ -88,24 +90,38 @@ fun ViewBudgetRoute(budgetId: Long,
         viewModel.observeBudget(budgetId)
     }
 
-    val budgetUIState by viewModel.budgetState.collectAsStateWithLifecycle()
-    when(budgetUIState) {
-        is UIState.Loading -> {
-            // TODO: show loading
+    val uiState by viewModel.viewBudgetUIState.collectAsStateWithLifecycle()
+    when(uiState.budgetState) {
+        is UIState.NotFound -> {
+            Log.i(TAG,"budget not found")
+            snackBarCallback(SnackBarEvent(
+                message = stringResource(R.string.message_budget_not_found)
+            ))
+            navigateTo(NavigationEvent.Exit())
         }
-        is UIState.Success<Budget> -> {
-            val budget = (budgetUIState as UIState.Success<Budget>).data
+        is UIState.Error -> {
+            Log.e(TAG, "view budget error", (uiState.budgetState as UIState.Error).cause)
+            snackBarCallback(
+                SnackBarEvent(
+                    message = stringResource(R.string.message_observe_budget_error),
+                    duration = SnackbarDuration.Short
+                )
+            )
+            navigateTo(NavigationEvent.Exit())
+        }
+        is UIState.Success -> {
             ViewBudgetScreen(
-                budget = budget,
-                navigateTo,
+                budgetState = uiState.budgetState,
+                categoriesState = uiState.categoryState,
+                navigateTo = navigateTo,
                 onUIEvent = { event ->
                     when(event) {
                         is ViewBudgetUIEvent.ShowEditBudgetDialogEvent -> {
-                            viewModel.updateBudgetEditDialogState(BudgetDialogState(showDialog = true, budget = budget))
+                            viewModel.updateBudgetEditDialogState(BudgetDialogState(showDialog = true, budget = event.budget))
                         }
                         is ViewBudgetUIEvent.EditBudgetEvent -> { viewModel.editBudget(event.budget) }
                         is ViewBudgetUIEvent.ShowAddCategoryDialogEvent -> {
-                            viewModel.updateCategoryDialogState(BudgetCategoryDialogState(showDialog = true, budget = budget))
+                            viewModel.updateCategoryDialogState(BudgetCategoryDialogState(showDialog = true, budget = event.budget))
                         }
                         is ViewBudgetUIEvent.AddCategoryEvent -> { viewModel.addCategory(event.category) }
                         is ViewBudgetUIEvent.ShowAddExpenseDialogEvent -> {
@@ -122,30 +138,14 @@ fun ViewBudgetRoute(budgetId: Long,
                 }
             )
         }
-        is UIState.NotFound -> {
-            Log.i(TAG,"budget with id=$budgetId not found")
-            snackBarCallback(SnackBarEvent(
-                message = stringResource(R.string.message_budget_not_found)
-            ))
-            navigateTo(NavigationEvent.Exit())
-        }
-        is UIState.Error -> {
-            Log.e(TAG, "view budget error", (budgetUIState as UIState.Error).cause)
-            snackBarCallback(
-                SnackBarEvent(
-                    message = stringResource(R.string.message_observe_budget_error),
-                    duration = SnackbarDuration.Short
-                )
-            )
-            navigateTo(NavigationEvent.Exit())
-        }
         else -> {}
     }
+
 
     val budgetSaveState by viewModel.budgetSaveState.collectAsStateWithLifecycle(UIState.Idle())
     LaunchedEffect(budgetSaveState) {
         when(budgetSaveState) {
-            is UIState.Success<Budget> -> {
+            is UIState.Success -> {
                 viewModel.updateBudgetEditDialogState(BudgetDialogState())
                 snackBarCallback(
                     SnackBarEvent(
@@ -172,7 +172,7 @@ fun ViewBudgetRoute(budgetId: Long,
     val categorySaveState by viewModel.categorySaveState.collectAsStateWithLifecycle(UIState.Idle())
     LaunchedEffect(categorySaveState) {
         when(categorySaveState) {
-            is UIState.Success<BudgetCategory> -> {
+            is UIState.Success -> {
                 viewModel.updateCategoryDialogState(BudgetCategoryDialogState())
                 snackBarCallback(
                     SnackBarEvent(
@@ -232,39 +232,52 @@ fun ViewBudgetRoute(budgetId: Long,
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ViewBudgetScreen(budget: Budget,
+fun ViewBudgetScreen(budgetState: UIState<Budget>,
+                     categoriesState: UIState<List<BudgetCategory>>,
                      navigateTo: NavigationCallback = {},
-                     onUIEvent: ViewBudgetUIEventCallback = {}
+                     onUIEvent: ViewBudgetUIEventCallback = {},
                      )
 {
-    var showBudgetDetails by remember { mutableStateOf(false) }
-    val categories = budget.categories
+    var budgetDetails by remember { mutableStateOf<String?>(null) }
 
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
         topBar = {
             TopAppBar(
                 title = {
-                    Text(
-                        text = budget.name,
-                        style = MaterialTheme.typography.headlineSmall
-                    )
-                },
-                actions = {
-                    // edit
-                    IconButton(onClick = { onUIEvent(ViewBudgetUIEvent.ShowEditBudgetDialogEvent(budget)) }) {
-                        Icon(
-                            imageVector = Icons.Default.Edit,
-                            contentDescription = stringResource(R.string.message_edit_category)
-                        )
+                    when(budgetState) {
+                        is UIState.Loading -> {
+                            Box(modifier = Modifier.size(width = 100.dp, height = 36.dp).shimmer())
+                        }
+                        is UIState.Success -> {
+                            Text(
+                                text = budgetState.data.name,
+                                style = MaterialTheme.typography.headlineSmall,
+                            )
+                        }
+                        else -> {}
                     }
+                },
 
-                    // info
-                    IconButton(onClick = { showBudgetDetails = true }) {
-                        Icon(Icons.Outlined.Info, stringResource(R.string.message_show_budget_details))
+                actions = {
+                    if (budgetState is UIState.Success) {
+                        val budget = budgetState.data
+                        // edit
+                        IconButton(onClick = { onUIEvent(ViewBudgetUIEvent.ShowEditBudgetDialogEvent(budget)) }) {
+                            Icon(
+                                imageVector = Icons.Default.Edit,
+                                contentDescription = stringResource(R.string.message_edit_category)
+                            )
+                        }
+
+                        // info
+                        IconButton(onClick = { budgetDetails = budget.details }) {
+                            Icon(Icons.Outlined.Info, stringResource(R.string.message_show_budget_details))
+                        }
                     }
                 },
+
                 navigationIcon = {
                     IconButton(onClick = { navigateTo(NavigationEvent.Exit()) }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.message_navigate_up))
@@ -282,38 +295,67 @@ fun ViewBudgetScreen(budget: Budget,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            // Header: Summary card (full width)
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                BudgetSummaryCard(budget = budget)
-            }
 
-            // Header: Categories title row (full width)
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                CategoriesHeader(
-                    onClickAddCategory = { onUIEvent(
-                        ViewBudgetUIEvent.ShowAddCategoryDialogEvent(
-                            budget
+            when(budgetState) {
+                is UIState.Loading -> {
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        Box(modifier = Modifier.fillMaxWidth().height(260.dp)
+                            .clip(shape = RoundedCornerShape(16.dp))
+                            .shimmer()
                         )
-                    ) }
-                )
+                    }
+                }
+                is UIState.Success -> {
+                    val budget = budgetState.data
+
+                    // Header: Summary card (full width)
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        BudgetSummaryCard(budget = budget)
+                    }
+
+                    // Header: Categories title row (full width)
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        CategoriesHeader(
+                            onClickAddCategory = { onUIEvent(
+                                ViewBudgetUIEvent.ShowAddCategoryDialogEvent(
+                                    budget
+                                )
+                            ) }
+                        )
+                    }
+                }
+                else -> {}
             }
 
-            if (categories.isNotEmpty()) {
-                // Grid items
-                items(categories, key = { it.id }) { category ->
-                    CategoryCard(
-                        category = category,
-                        onUIEvent = onUIEvent,
-                    )
+            when(categoriesState) {
+                is UIState.Loading -> {
+                    items(10) {
+                        Box(modifier = Modifier.size(width = 320.dp, height = 300.dp)
+                            .clip(shape = RoundedCornerShape(16.dp))
+                            .shimmer()
+                        )
+                    }
                 }
+                is UIState.Success -> {
+                    val categories = categoriesState.data
+
+                    // Grid items
+                    items(items = categories, key = { it.id }) { category ->
+                        CategoryCard(
+                            category = category,
+                            onUIEvent = onUIEvent,
+                        )
+                    }
+                }
+                else -> {}
             }
         }
     }
 
-    if (showBudgetDetails) {
+    if (budgetDetails != null) {
         BudgetDetailsDialog(
-            details = budget.details,
-            onDismiss = { showBudgetDetails = false }
+            details = budgetDetails!!,
+            onDismiss = { budgetDetails = null }
         )
     }
 }
@@ -321,6 +363,7 @@ fun ViewBudgetScreen(budget: Budget,
 @Composable
 fun BudgetSummaryCard(budget: Budget) {
     Card(
+        colors = tileColors(),
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(4.dp),
     ) {
@@ -375,6 +418,7 @@ fun CategoryCard(category: BudgetCategory,
                  )
 {
     Card(
+        colors = tileColors(),
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(3.dp),
     ) {
@@ -385,15 +429,6 @@ fun CategoryCard(category: BudgetCategory,
                 text = category.name,
                 style = MaterialTheme.typography.titleMedium,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Text(
-                text = category.note,
-                style = MaterialTheme.typography.bodySmall,
-                maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
 
@@ -441,48 +476,48 @@ fun CategoryCard(category: BudgetCategory,
     }
 }
 
-@Preview(
-    showBackground = true,
-    device = PIXEL,
-)
-@Composable
-fun BudgetDetailsScreenPreview() {
-    ViewBudgetScreen(
-        budget = Budget(
-            id = 1,
-            name = "Darjeeling Tour",
-            details = "Budget for Darjeeling tour of me and Rivu in February, 2026",
-            totalExpense = 7000.0,
-            totalAllocation = 15000.0,
-            categories = listOf(
-                BudgetCategory(
-                    id = 1,
-                    budgetId = 1,
-                    name = "Travelling",
-                    note = "All cost of travelling",
-                    allocation = 9000.0,
-                    totalExpense = 7200.0
-                ),
-
-                BudgetCategory(
-                    id = 2,
-                    budgetId = 1,
-                    name = "This is a very long name of the category to test how long text it can contain",
-                    note = "A very very very very very very very very very very very long note for the category to test how long text it  can fit",
-                    allocation = 3000.0,
-                    totalExpense = 2900.0
-                ),
-
-                BudgetCategory(
-                    id = 3,
-                    budgetId = 1,
-                    name = "Hotels",
-                    note = "All cost of hotels",
-                    allocation = 7500.0,
-                    totalExpense = 8000.0
-                ),
-            )
-        )
-    )
-}
+//@Preview(
+//    showBackground = true,
+//    device = PIXEL,
+//)
+//@Composable
+//fun BudgetDetailsScreenPreview() {
+//    ViewBudgetScreen(
+//        budget = Budget(
+//            id = 1,
+//            name = "Darjeeling Tour",
+//            details = "Budget for Darjeeling tour of me and Rivu in February, 2026",
+//            totalExpense = 7000.0,
+//            totalAllocation = 15000.0,
+//            categories = listOf(
+//                BudgetCategory(
+//                    id = 1,
+//                    budgetId = 1,
+//                    name = "Travelling",
+//                    note = "All cost of travelling",
+//                    allocation = 9000.0,
+//                    totalExpense = 7200.0
+//                ),
+//
+//                BudgetCategory(
+//                    id = 2,
+//                    budgetId = 1,
+//                    name = "This is a very long name of the category to test how long text it can contain",
+//                    note = "A very very very very very very very very very very very long note for the category to test how long text it  can fit",
+//                    allocation = 3000.0,
+//                    totalExpense = 2900.0
+//                ),
+//
+//                BudgetCategory(
+//                    id = 3,
+//                    budgetId = 1,
+//                    name = "Hotels",
+//                    note = "All cost of hotels",
+//                    allocation = 7500.0,
+//                    totalExpense = 8000.0
+//                ),
+//            )
+//        )
+//    )
+//}
 

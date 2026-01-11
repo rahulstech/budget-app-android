@@ -131,6 +131,7 @@ fun RouteContent(content: @Composable (SnackBarCallback)-> Unit) {
     val coroutineScope = rememberCoroutineScope()
 
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
         snackbarHost = {
             SnackbarHost(snackBarHostState) { data ->
                 val snackBarEvent = (data.visuals as SnackBarEvent)
