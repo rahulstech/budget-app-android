@@ -80,6 +80,20 @@ class ViewBudgetViewModel @Inject constructor(
         }
     }
 
+    // remove budget
+    private val actionRemoveBudget = UIAction<Budget, Unit>(
+        action = { repo.removeBudget(it) },
+        converter = { _, _ -> UIState.Success(Unit) }
+    )
+
+    val removeBudgetState = actionRemoveBudget.uiState
+
+    fun removeBudget(budget: Budget) {
+        viewModelScope.launch {
+            actionRemoveBudget.doAction(budget)
+        }
+    }
+
     // edit budget
     private val actionEditBudget = UIAction<Budget, Budget>(
         action = { repo.editBudget(it) },
@@ -143,5 +157,12 @@ class ViewBudgetViewModel @Inject constructor(
 
     fun updateExpenseDialogState(state: ExpenseDialogState) {
         _expenseDialogState.value = state
+    }
+
+    private val _deleteBudgetDialogState = MutableStateFlow(BudgetDialogState())
+    val deleteBudgetDialogState: StateFlow<BudgetDialogState> = _deleteBudgetDialogState.asStateFlow()
+
+    fun updateDeleteBudgetDialogState(state: BudgetDialogState) {
+        _deleteBudgetDialogState.value = state
     }
 }

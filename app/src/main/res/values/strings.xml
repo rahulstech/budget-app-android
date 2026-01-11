@@ -16,14 +16,18 @@
     <string name="label_expense_note">Note</string>
     <string name="label_view_budget_expenses">View Expenses</string>
     <string name="label_view_budget_category_expenses">View Expenses</string>
-
     <string name="label_create_budget">Create Budget</string>
     <string name="label_add">Add</string>
     <string name="label_cancel">Cancel</string>
     <string name="label_save">Save</string>
     <string name="label_ok">OK</string>
+    <string name="label_yes">Yes</string>
+    <string name="label_no">No</string>
     <string name="label_add_expense">Add Expense</string>
     <string name="label_choose">Choose</string>
+    <string name="label_no_expense">No Expense Added</string>
+    <string name="label_no_budget">No Budget Created</string>
+    <string name="label_no_category">No Category Added</string>
 
     <string name="title_budget_list">My Budgets</string>
     <string name="title_new_budget">New Budget</string>
@@ -31,6 +35,7 @@
     <string name="title_new_budget_category">New Category</string>
     <string name="title_add_expense">Add Expense</string>
     <string name="title_view_expenses">Expenses</string>
+    <string name="title_delete_budget">Delete Budget</string>
 
     <string name="message_remove_category">remove %1$s</string>
     <string name="message_edit_category">edit %1$s</string>
@@ -38,6 +43,10 @@
     <string name="message_show_budget_details">show budget details</string>
     <string name="message_edit_budget">edit budget</string>
     <string name="message_expense_date_picker">choose expense date</string>
+    <string name="message_navigate_up">navigate up</string>
+    <string name="message_filter_expenses">filter expenses</string>
+    <string name="message_delete_budget">delete budget</string>
+    <string name="message_add_at_least_one_category">add at least category</string>
 
     <string name="message_budget_save_success">Budget saved</string>
     <string name="message_budget_save_error">Budget not saved for some error</string>
@@ -46,8 +55,10 @@
     <string name="message_budget_category_save_error">Something error occurred, category not saved</string>
     <string name="message_expense_add_successful">Expense added</string>
     <string name="message_budget_not_found">Budget not found</string>
-    <string name="message_navigate_up">navigate up</string>
-    <string name="mesage_filter_expenses">filter expenses</string>
+    <string name="message_warning_delete_budget">
+        This budget will be delete permanently. There is no way to restore this budget later. Do you still want to proceed ?
+    </string>
+    <string name="message_budget_remove_error">Budget not delete for some error</string>
 
 
 </resources>

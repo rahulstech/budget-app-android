@@ -162,7 +162,7 @@ fun RouteContent(content: @Composable (SnackBarCallback)-> Unit) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding),
+                .padding(innerPadding).padding(0.dp),
             contentAlignment = Alignment.TopCenter
         ) {
             Box(
@@ -239,7 +239,7 @@ fun MainNavigation() {
                 )
             ) { backStackEntry ->
                 val budgetId = backStackEntry.arguments?.getLong(ARG_BUDGET_ID)!!
-                val categoryId = backStackEntry.arguments?.getLong(ARG_CATEGORY_ID)
+                val categoryId = backStackEntry.arguments?.getLong(ARG_CATEGORY_ID).takeUnless { it == 0L }
                 ViewExpensesRoute(
                     budgetId = budgetId,
                     categoryId = categoryId,

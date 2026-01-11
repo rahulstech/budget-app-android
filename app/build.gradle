@@ -38,6 +38,7 @@ android {
         jvmTarget = "11"
         // add the following so don't need to add @OptIn(ExperimentalMaterial3Api::class)
         freeCompilerArgs += "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api"
+        freeCompilerArgs += "-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi"
     }
     kapt {
         correctErrorTypes true

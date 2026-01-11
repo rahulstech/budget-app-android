@@ -20,6 +20,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.Card
@@ -58,6 +59,7 @@ import rahulstech.android.budgetapp.ui.components.BudgetEditDialog
 import rahulstech.android.budgetapp.ui.components.CategoryDialog
 import rahulstech.android.budgetapp.ui.components.BudgetCategoryDialogState
 import rahulstech.android.budgetapp.ui.components.BudgetDialogState
+import rahulstech.android.budgetapp.ui.components.DeleteBudgetWarningDialog
 import rahulstech.android.budgetapp.ui.components.ExpenseDialog
 import rahulstech.android.budgetapp.ui.components.ExpenseDialogState
 import rahulstech.android.budgetapp.ui.components.ExpenseLinearProgress
@@ -69,6 +71,7 @@ import rahulstech.android.budgetapp.ui.screen.ScreenArgs
 import rahulstech.android.budgetapp.ui.screen.SnackBarCallback
 import rahulstech.android.budgetapp.ui.screen.SnackBarEvent
 import rahulstech.android.budgetapp.ui.screen.UIState
+import rahulstech.android.budgetapp.ui.theme.primaryTopAppBarColors
 import rahulstech.android.budgetapp.ui.theme.tileColors
 
 private const val TAG = "ViewBudget"
@@ -85,6 +88,7 @@ fun ViewBudgetRoute(budgetId: Long,
     val budgetDialogState by viewModel.budgetEditDialogState.collectAsStateWithLifecycle()
     val categoryDialogState by viewModel.categoryDialogState.collectAsStateWithLifecycle()
     val expenseDialogState by viewModel.expenseDialogState.collectAsStateWithLifecycle()
+    val deleteBudgetDialogState by viewModel.deleteBudgetDialogState.collectAsStateWithLifecycle()
 
     LaunchedEffect(budgetId) {
         viewModel.observeBudget(budgetId)
@@ -128,11 +132,14 @@ fun ViewBudgetRoute(budgetId: Long,
                             viewModel.updateExpenseDialogState(ExpenseDialogState(showDialog = true, category = event.category))
                         }
                         is ViewBudgetUIEvent.AddExpenseEvent -> { viewModel.addExpense(event.expense) }
-                        is ViewBudgetUIEvent.ViewExpenses -> {
+                        is ViewBudgetUIEvent.ViewExpensesEvent -> {
                             navigateTo(NavigationEvent.ForwardTo(
                                 screen = Screen.ViewExpenses,
                                 args = ScreenArgs(budgetId = event.budgetId, categoryId = event.categoryId)
                             ))
+                        }
+                        is ViewBudgetUIEvent.DeleteBudgetEvent -> {
+                            viewModel.updateDeleteBudgetDialogState(BudgetDialogState(showDialog = true, budget = event.budget))
                         }
                     }
                 }
@@ -163,7 +170,7 @@ fun ViewBudgetRoute(budgetId: Long,
             onDismiss = { viewModel.updateBudgetEditDialogState(BudgetDialogState()) },
             onClickSave = { editedBudget ->
                 // BudgetEditDialog already set the id to the editedBudget
-                viewModel.updateBudgetEditDialogState(budgetDialogState.copy(enabled = false, budget = editedBudget))
+                viewModel.updateBudgetEditDialogState(budgetDialogState.copy(isLoading = false, budget = editedBudget))
                 viewModel.editBudget(editedBudget)
             }
         )
@@ -230,6 +237,33 @@ fun ViewBudgetRoute(budgetId: Long,
             }
         )
     }
+
+    val removeBudgetState by viewModel.removeBudgetState.collectAsStateWithLifecycle(UIState.Idle())
+    LaunchedEffect(removeBudgetState) {
+        when(removeBudgetState) {
+            is UIState.Success -> {
+                navigateTo(NavigationEvent.Exit())
+            }
+            is UIState.Error -> {
+                Log.e(TAG, "remove budget error", (removeBudgetState as UIState.Error).cause)
+                snackBarCallback(SnackBarEvent(
+                    message = context.getString(R.string.message_budget_remove_error)
+                ))
+            }
+            else -> {}
+        }
+    }
+
+    if (deleteBudgetDialogState.showDialog) {
+        DeleteBudgetWarningDialog(
+            state = deleteBudgetDialogState,
+            onDismiss = { viewModel.updateDeleteBudgetDialogState(BudgetDialogState()) },
+            onClickDelete = { budget ->
+                viewModel.updateDeleteBudgetDialogState(BudgetDialogState())
+                viewModel.removeBudget(budget)
+            }
+        )
+    }
 }
 
 @Composable
@@ -245,6 +279,8 @@ fun ViewBudgetScreen(budgetState: UIState<Budget>,
         containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
         topBar = {
             TopAppBar(
+                colors = primaryTopAppBarColors(),
+
                 title = {
                     when(budgetState) {
                         is UIState.Loading -> {
@@ -263,6 +299,12 @@ fun ViewBudgetScreen(budgetState: UIState<Budget>,
                 actions = {
                     if (budgetState is UIState.Success) {
                         val budget = budgetState.data
+
+                        // delete
+                        IconButton(onClick = { onUIEvent(ViewBudgetUIEvent.DeleteBudgetEvent(budget)) }) {
+                            Icon(Icons.Default.Delete, stringResource(R.string.message_delete_budget))
+                        }
+
                         // edit
                         IconButton(onClick = { onUIEvent(ViewBudgetUIEvent.ShowEditBudgetDialogEvent(budget)) }) {
                             Icon(
@@ -275,6 +317,8 @@ fun ViewBudgetScreen(budgetState: UIState<Budget>,
                         IconButton(onClick = { budgetDetails = budget.details }) {
                             Icon(Icons.Outlined.Info, stringResource(R.string.message_show_budget_details))
                         }
+
+
                     }
                 },
 
@@ -310,7 +354,7 @@ fun ViewBudgetScreen(budgetState: UIState<Budget>,
 
                     // Header: Summary card (full width)
                     item(span = { GridItemSpan(maxLineSpan) }) {
-                        BudgetSummaryCard(budget = budget)
+                        BudgetSummaryCard(budget, onUIEvent)
                     }
 
                     // Header: Categories title row (full width)
@@ -361,7 +405,9 @@ fun ViewBudgetScreen(budgetState: UIState<Budget>,
 }
 
 @Composable
-fun BudgetSummaryCard(budget: Budget) {
+fun BudgetSummaryCard(budget: Budget,
+                      onUIEvent: ViewBudgetUIEventCallback)
+{
     Card(
         colors = tileColors(),
         shape = RoundedCornerShape(16.dp),
@@ -385,7 +431,7 @@ fun BudgetSummaryCard(budget: Budget) {
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp, alignment = Alignment.End)
             ) {
-                FilledTonalButton(onClick = {}) {
+                FilledTonalButton(onClick = { onUIEvent(ViewBudgetUIEvent.ViewExpensesEvent(budget.id))}) {
                     Text(text = stringResource(R.string.label_view_budget_expenses))
                 }
             }
@@ -449,7 +495,7 @@ fun CategoryCard(category: BudgetCategory,
             ) {
                 // view expenses
                 FilledTonalButton (
-                    onClick = { onUIEvent(ViewBudgetUIEvent.ViewExpenses(budgetId = category.budgetId, categoryId = category.id)) }
+                    onClick = { onUIEvent(ViewBudgetUIEvent.ViewExpensesEvent(budgetId = category.budgetId, categoryId = category.id)) }
                 ) {
                     Icon(
                         painter = painterResource(R.drawable.baseline_currency_rupee_24),

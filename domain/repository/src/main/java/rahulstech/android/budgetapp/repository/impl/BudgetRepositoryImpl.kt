@@ -4,9 +4,12 @@ import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.map
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 import rahulstech.android.budgetapp.budgetdb.IBudgetDB
 import rahulstech.android.budgetapp.budgetdb.entity.BudgetEntity
 import rahulstech.android.budgetapp.repository.BudgetRepository
@@ -76,7 +79,6 @@ class BudgetRepositoryImpl(val db: IBudgetDB): BudgetRepository {
         db.budgetDao.observeBudgetById(id).map { it?.toModel() }
 
     override fun observeAllBudgets(): Flow<PagingData<Budget>> {
-
         return Pager(
             config = PagingConfig(
                 pageSize = 20,
@@ -98,11 +100,11 @@ class BudgetRepositoryImpl(val db: IBudgetDB): BudgetRepository {
             }
     }
 
-    override suspend fun editBudget(budget: Budget): Budget?  {
+    override suspend fun editBudget(budget: Budget): Budget?  = db.runInTransaction {
         val existing = db.budgetDao
             .observeBudgetById(budget.id)
             .first()
-            ?: return null
+            ?: return@runInTransaction null
 
         val updated = existing.copy(
             name = budget.name,
@@ -112,14 +114,16 @@ class BudgetRepositoryImpl(val db: IBudgetDB): BudgetRepository {
 
         db.budgetDao.update(updated)
 
-        return budget.copy(
+        return@runInTransaction budget.copy(
             totalAllocation = existing.totalAllocation,
             totalExpense = existing.totalExpense
         )
     }
 
-    override suspend fun removeBudget(budget: Budget) {
-        db.budgetDao.delete(budget.toEntity())
+    override suspend fun removeBudget(budget: Budget) = coroutineScope {
+        withContext(Dispatchers.IO) {
+            db.budgetDao.delete(budget.toEntity())
+        }
     }
 
     override suspend fun addCategory(category: BudgetCategory): BudgetCategory =

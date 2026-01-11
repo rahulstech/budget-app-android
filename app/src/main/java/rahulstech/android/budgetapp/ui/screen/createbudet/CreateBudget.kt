@@ -62,6 +62,7 @@ import rahulstech.android.budgetapp.ui.screen.SnackBarCallback
 import rahulstech.android.budgetapp.ui.screen.SnackBarEvent
 import rahulstech.android.budgetapp.ui.screen.UIState
 import rahulstech.android.budgetapp.ui.theme.BudgetAppTheme
+import rahulstech.android.budgetapp.ui.theme.primaryTopAppBarColors
 
 private const val TAG = "CreateBudget"
 
@@ -110,6 +111,7 @@ fun CreateBudgetRoute(snackBarCallback: SnackBarCallback,
     }
 
     CreateBudgetScreen(
+        navigateTo = navigateTo,
         onUIEvent = { event ->
             when (event) {
                 is CreateBudgetUIEvent.AddBudgetEvent -> { viewModel.createBudget(event.budget) }
@@ -145,6 +147,7 @@ fun CreateBudgetRoute(snackBarCallback: SnackBarCallback,
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreateBudgetScreen(uiState: CreateBudgetUIState,
+                       navigateTo: NavigationCallback = {},
                        onUIEvent: CreateBudgetUIEventCallback = {},
                        )
 {
@@ -152,13 +155,7 @@ fun CreateBudgetScreen(uiState: CreateBudgetUIState,
     Scaffold(
         topBar = {
             TopAppBar(
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    scrolledContainerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary,
-                    actionIconContentColor = MaterialTheme.colorScheme.onPrimary,
-                ),
+                colors = primaryTopAppBarColors(),
                 title = {
                     Text(
                         text = stringResource(R.string.title_new_budget),
@@ -167,7 +164,7 @@ fun CreateBudgetScreen(uiState: CreateBudgetUIState,
                 },
                 actions = {
                     IconButton(
-                        enabled = !uiState.isSaving && uiState.canSave, // TODO: remove category non-empty check
+                        enabled = !uiState.isSaving && uiState.canSave,
                         onClick = {
                             onUIEvent(
                                 CreateBudgetUIEvent.AddBudgetEvent(
@@ -180,8 +177,8 @@ fun CreateBudgetScreen(uiState: CreateBudgetUIState,
                     }
                 },
                 navigationIcon = {
-                    IconButton(onClick = { }) {
-                        Icon(imageVector = Icons.AutoMirrored.Default.ArrowBack, contentDescription = null) // TODO: add content description
+                    IconButton(onClick = { navigateTo(NavigationEvent.Exit()) }) {
+                        Icon( Icons.AutoMirrored.Default.ArrowBack, stringResource(R.string.message_navigate_up))
                     }
                 }
             )
@@ -295,7 +292,7 @@ fun NoCategoriesComponent() {
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Text(
-            text = "No Category Added",
+            text = stringResource(R.string.label_no_category),
             style = MaterialTheme.typography.titleMedium
         )
 

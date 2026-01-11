@@ -9,10 +9,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -23,6 +27,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -32,7 +37,7 @@ import rahulstech.android.budgetapp.ui.screen.BUDGET_PLACEHOLDER
 
 data class BudgetDialogState(
     val showDialog: Boolean = false,
-    val enabled: Boolean = true,
+    val isLoading: Boolean = false,
     val budget: Budget = BUDGET_PLACEHOLDER,
 )
 
@@ -42,7 +47,7 @@ fun BudgetEditDialog(budgetDialogState: BudgetDialogState,
                      onClickSave: (Budget)-> Unit,
                  )
 {
-    val enabled = budgetDialogState.enabled
+    val enabled = !budgetDialogState.isLoading
     val budget = budgetDialogState.budget
     var name by rememberSaveable { mutableStateOf(budget.name) }
     var details by rememberSaveable { mutableStateOf(budget.details) }
@@ -160,6 +165,43 @@ fun BudgetDetailsDialog(details: String,
                 text = details,
                 style = MaterialTheme.typography.bodyLarge
             )
+        }
+    }
+}
+
+@Composable
+fun DeleteBudgetWarningDialog(state: BudgetDialogState,
+                              onDismiss: ()-> Unit,
+                              onClickDelete: (Budget)-> Unit)
+{
+    BasicAlertDialog(
+        onDismissRequest = onDismiss
+    ) {
+        Surface(
+            modifier = Modifier.clip(shape = RoundedCornerShape(16.dp)),
+        ) {
+            Column(
+                modifier = Modifier.wrapContentSize().padding(16.dp)
+            ) {
+                Text(text = stringResource(R.string.title_delete_budget), style = MaterialTheme.typography.titleLarge)
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(text = stringResource(R.string.message_warning_delete_budget))
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End)
+                ) {
+                    TextButton(onClick = { onClickDelete(state.budget) }) { Text(stringResource(R.string.label_yes))}
+
+                    TextButton(onClick = onDismiss) { Text(stringResource(R.string.label_cancel)) }
+                }
+            }
         }
     }
 }

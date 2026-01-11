@@ -5,11 +5,13 @@ import java.time.LocalDate
 
 sealed interface ExpenseListItem {
 
-    data class ItemHeader(val date: LocalDate): ExpenseListItem
+    val key: Any
 
-    data class ItemExpense(
-        val value: Expense
-    ): ExpenseListItem
+    data class ItemHeader(val date: LocalDate): ExpenseListItem {
+        override val key: Any = date.toEpochDay()
+    }
 
-
+    data class ItemExpense(val value: Expense): ExpenseListItem {
+        override val key: Any = value.id
+    }
 }

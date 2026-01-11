@@ -8,7 +8,7 @@ import java.time.LocalDate
 data class ExpenseFilterParams(
     val budgetId: Long,
     val categories: List<Long> = emptyList(),
-    val dateRange: Pair<LocalDate, LocalDate> = (LocalDate.MIN to LocalDate.MIN),
+    val dateRange: Pair<LocalDate, LocalDate>? = null,
     val newestFirst: Boolean = true
 ) {
 
