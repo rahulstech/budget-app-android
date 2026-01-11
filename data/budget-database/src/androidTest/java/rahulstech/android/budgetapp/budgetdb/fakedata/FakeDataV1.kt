@@ -14,10 +14,11 @@ class FakeDataV1: RoomDatabase.Callback() {
 
         // categories
         insertBudgetCategories(db, 1, 4)
+        insertBudgetCategories(db, 2, 2)
 
         // expenses
         insertExpenses(db, 1, 101, 50)
-        insertExpenses(db, 1, 103, 30)
+        insertExpenses(db, 2, 202, 20)
     }
 
     fun insertBudgets(db: SupportSQLiteDatabase, count: Int) {

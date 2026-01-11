@@ -28,6 +28,8 @@ interface BudgetRepository {
 
     suspend fun addExpense(expense: Expense): Expense
 
+    suspend fun observeExpenses(params: ExpenseFilterParams): Flow<PagingData<Expense>>
+
     suspend fun editExpense(expense: Expense): Expense?
 
     suspend fun removeExpense(expense: Expense, reverseAmounts: Boolean = true)

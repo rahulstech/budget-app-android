@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.map
 import rahulstech.android.budgetapp.budgetdb.IBudgetDB
 import rahulstech.android.budgetapp.budgetdb.entity.BudgetEntity
 import rahulstech.android.budgetapp.repository.BudgetRepository
+import rahulstech.android.budgetapp.repository.ExpenseFilterParams
 import rahulstech.android.budgetapp.repository.model.Budget
 import rahulstech.android.budgetapp.repository.model.BudgetCategory
 import rahulstech.android.budgetapp.repository.model.Expense
@@ -19,7 +20,7 @@ import rahulstech.android.budgetapp.repository.toModel
 class BudgetRepositoryImpl(val db: IBudgetDB): BudgetRepository {
 
     override suspend fun createBudget(budget: Budget): Budget =
-        db.runInTransaction<Budget> {
+        db.runInTransaction {
 
             // 1. Insert budget shell (totals start at 0)
             val budgetId = db.budgetDao.insert(
@@ -122,7 +123,7 @@ class BudgetRepositoryImpl(val db: IBudgetDB): BudgetRepository {
     }
 
     override suspend fun addCategory(category: BudgetCategory): BudgetCategory =
-        db.runInTransaction<BudgetCategory> {
+        db.runInTransaction {
 
             val budget = db.budgetDao
                 .observeBudgetById(category.budgetId)
@@ -156,7 +157,7 @@ class BudgetRepositoryImpl(val db: IBudgetDB): BudgetRepository {
     }
 
     override suspend fun editCategory(category: BudgetCategory): BudgetCategory? =
-        db.runInTransaction<BudgetCategory?> {
+        db.runInTransaction {
             val old = db.budgetCategoryDao
                 .observeCategoryById(category.id)
                 .first() ?: return@runInTransaction null
@@ -193,8 +194,8 @@ class BudgetRepositoryImpl(val db: IBudgetDB): BudgetRepository {
 
                 db.budgetDao.update(
                     budget.copy(
-                        totalAllocation = budget.totalAllocation - category.allocation,
-                        totalExpense = budget.totalExpense - category.totalExpense
+                        totalAllocation = budget.totalAllocation - old.allocation,
+                        totalExpense = budget.totalExpense - old.totalExpense
                     )
                 )
             }
@@ -202,7 +203,7 @@ class BudgetRepositoryImpl(val db: IBudgetDB): BudgetRepository {
     }
 
     override suspend fun addExpense(expense: Expense): Expense =
-        db.runInTransaction<Expense> {
+        db.runInTransaction {
             val budget = db.budgetDao
                 .observeBudgetById(expense.budgetId)
                 .first() ?: return@runInTransaction expense // TODO: throw budget not found
@@ -228,8 +229,35 @@ class BudgetRepositoryImpl(val db: IBudgetDB): BudgetRepository {
             expense.copy(id = id)
         }
 
+    override suspend fun observeExpenses(params: ExpenseFilterParams): Flow<PagingData<Expense>> {
+        return Pager(
+            config = PagingConfig(
+                pageSize = 20,
+                enablePlaceholders = true,
+            ),
+            pagingSourceFactory = { params.createPageSource(db.expenseDao) }
+        ).flow
+            .map { pagingData ->
+                pagingData.map { (expense, categoryName) ->
+                    Expense(
+                        id = expense.id,
+                        budgetId = expense.budgetId,
+                        categoryId = expense.categoryId,
+                        note = expense.note,
+                        amount = expense.amount,
+                        date = expense.date,
+                        category = BudgetCategory(
+                            id = expense.categoryId,
+                            budgetId = expense.budgetId,
+                            name = categoryName.name
+                        )
+                    )
+                }
+            }
+    }
+
     override suspend fun editExpense(expense: Expense): Expense? =
-        db.runInTransaction<Expense?> {
+        db.runInTransaction {
             val old = db.expenseDao
                 .observeExpenseById(expense.id)
                 .first() ?: return@runInTransaction null

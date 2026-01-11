@@ -61,7 +61,7 @@ class ExpenseDaoTest {
 
     @Test
     fun observeExpensesOfBudget() = runBlocking {
-        val source = dao.observeExpensesOfBudget(1)
+        val source = dao.observeExpensesOfBudget(1, newestFirst = false)
 
         val params1 = PagingSource.LoadParams.Refresh<Int>(
             key = null,
@@ -111,8 +111,8 @@ class ExpenseDaoTest {
     }
 
     @Test
-    fun observeExpensesOfBudgetBetweenDates() = runBlocking {
-        val source = dao.observeExpensesOfBudgetBetweenDates(
+    fun observeExpensesOfBudgetBetweenDatesNewestFirst() = runBlocking {
+        val source = dao.observeExpensesOfBudgetBetweenDatesNewestFirst(
             budgetId = 1,
             startInclusive = Converters.longToLocalDate(epochPlusDays(1))!!,
             endInclusive = Converters.longToLocalDate(epochPlusDays(5))!!
@@ -127,7 +127,61 @@ class ExpenseDaoTest {
         assertTrue(result1 is PagingSource.LoadResult.Page)
 
         val page1 = result1 as PagingSource.LoadResult.Page
-        assertEquals(10, page1.data.size)
+        assertEquals(5, page1.data.size)
+
+        val expenseLast = ExpenseWithCategoryModel(
+            expense = ExpenseModel(
+                id = 110101,
+                budgetId = 1,
+                categoryId = 101,
+                note = "note for expense expense 1 of budget 1 and category 101",
+                amount = 100.0,
+                date = Converters.longToLocalDate(epochPlusDays(1))!!
+            ),
+            categoryName = BudgetCategoryNameModel(
+                id = 101,
+                budgetId = 1,
+                name = "Category 1-1"
+            )
+        )
+        val expenseFirst = ExpenseWithCategoryModel(
+            expense = ExpenseModel(
+                id = 110105,
+                budgetId = 1,
+                categoryId = 101,
+                note = "note for expense expense 5 of budget 1 and category 101",
+                amount = 500.0,
+                date = Converters.longToLocalDate(epochPlusDays(5))!!
+            ),
+            categoryName = BudgetCategoryNameModel(
+                id = 101,
+                budgetId = 1,
+                name = "Category 1-1"
+            )
+        )
+        assertEquals(expenseFirst, page1.data.first())
+        assertEquals(expenseLast, page1.data.last())
+        assertNull(page1.nextKey)
+    }
+
+    @Test
+    fun observeExpensesOfBudgetBetweenDatesOldestFirst() = runBlocking {
+        val source = dao.observeExpensesOfBudgetBetweenDatesOldestFirst(
+            budgetId = 1,
+            startInclusive = Converters.longToLocalDate(epochPlusDays(1))!!,
+            endInclusive = Converters.longToLocalDate(epochPlusDays(5))!!
+        )
+
+        val params1 = PagingSource.LoadParams.Refresh<Int>(
+            key = null,
+            loadSize = 10,
+            placeholdersEnabled = false
+        )
+        val result1 = source.load(params1)
+        assertTrue(result1 is PagingSource.LoadResult.Page)
+
+        val page1 = result1 as PagingSource.LoadResult.Page
+        assertEquals(5, page1.data.size)
 
         val expenseFirst = ExpenseWithCategoryModel(
             expense = ExpenseModel(
@@ -146,17 +200,17 @@ class ExpenseDaoTest {
         )
         val expenseLast = ExpenseWithCategoryModel(
             expense = ExpenseModel(
-                id = 110305,
+                id = 110105,
                 budgetId = 1,
-                categoryId = 103,
-                note = "note for expense expense 5 of budget 1 and category 103",
+                categoryId = 101,
+                note = "note for expense expense 5 of budget 1 and category 101",
                 amount = 500.0,
                 date = Converters.longToLocalDate(epochPlusDays(5))!!
             ),
             categoryName = BudgetCategoryNameModel(
-                id = 103,
+                id = 101,
                 budgetId = 1,
-                name = "Category 1-3"
+                name = "Category 1-1"
             )
         )
         assertEquals(expenseFirst, page1.data.first())
