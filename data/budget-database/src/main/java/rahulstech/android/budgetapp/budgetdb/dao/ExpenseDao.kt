@@ -120,4 +120,7 @@ interface ExpenseDao {
 
     @Delete
     suspend fun delete(expense: ExpenseEntity)
+
+    @Delete
+    suspend fun deleteExpenses(expenses: List<ExpenseEntity>)
 }

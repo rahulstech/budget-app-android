@@ -12,8 +12,12 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import rahulstech.android.budgetapp.repository.BudgetRepository
 import rahulstech.android.budgetapp.repository.ExpenseFilterParams
+import rahulstech.android.budgetapp.repository.model.Expense
+import rahulstech.android.budgetapp.ui.components.ExpenseDialogStateManager
+import rahulstech.android.budgetapp.ui.screen.UIAction
 import javax.inject.Inject
 
 private const val TAG = "ViewExpensesViewModel"
@@ -48,4 +52,45 @@ class ViewExpensesViewModel @Inject constructor(val repo: BudgetRepository): Vie
     fun filterExpenses(params: ExpenseFilterParams) {
         _expenseFilterParamsState.value = params
     }
+
+    // add expense
+    private val _actionAddExpense = UIAction<Expense, Expense>(
+        action = { repo.addExpense(it) }
+    )
+    val addExpenseState = _actionAddExpense.uiState
+
+    fun addExpense(expense: Expense) {
+        viewModelScope.launch {
+            _actionAddExpense.doAction(expense)
+        }
+    }
+
+    // edit expense
+    private val _actionEditExpense = UIAction<Expense, Expense?>(
+        action = { repo.editExpense(it) }
+    )
+    val editExpenseState = _actionEditExpense.uiState
+
+    fun editExpense(expense: Expense) {
+        viewModelScope.launch {
+            _actionEditExpense.doAction(expense)
+        }
+    }
+
+    // delete expense
+    private val _actionRemoveExpense = UIAction<Expense, Unit>(
+        action = { repo.removeExpense(it) }
+    )
+    val removeExpenseState = _actionRemoveExpense.uiState
+
+    fun removeExpense(expense: Expense) {
+        viewModelScope.launch {
+            _actionRemoveExpense.doAction(expense)
+        }
+    }
+
+    // expense dialog state
+    val expenseDialogStateManager = ExpenseDialogStateManager()
+
+    val expenseDialogState get() = expenseDialogStateManager.expenseDialogStateFlow
 }

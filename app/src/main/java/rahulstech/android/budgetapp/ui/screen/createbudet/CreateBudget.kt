@@ -116,7 +116,7 @@ fun CreateBudgetRoute(snackBarCallback: SnackBarCallback,
             when (event) {
                 is CreateBudgetUIEvent.AddBudgetEvent -> { viewModel.createBudget(event.budget) }
                 is CreateBudgetUIEvent.ShowCategoryDialogEvent -> {
-                    viewModel.updateCategoryDialogState(BudgetCategoryDialogState(showDialog = true, category = event.category))
+                    viewModel.categoryDialogStateManager.showDialog(category = event.category)
                 }
                 is CreateBudgetUIEvent.RemoveCategoryEvent -> {
                     viewModel.removeCategory(event.category)
@@ -136,10 +136,10 @@ fun CreateBudgetRoute(snackBarCallback: SnackBarCallback,
         CategoryDialog(
             categoryDialogState = categoryDialogState,
             onClickSave = { category ->
+                viewModel.categoryDialogStateManager.hideDialog()
                 viewModel.saveCategory(category)
-                viewModel.updateCategoryDialogState(BudgetCategoryDialogState())
             },
-            onDismiss = { viewModel.updateCategoryDialogState(BudgetCategoryDialogState()) }
+            onDismiss = { viewModel.categoryDialogStateManager.hideDialog() }
         )
     }
 }

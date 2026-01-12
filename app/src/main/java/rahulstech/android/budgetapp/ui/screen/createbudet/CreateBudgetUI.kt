@@ -29,3 +29,11 @@ sealed interface CreateBudgetUIEvent {
 
 typealias CreateBudgetUIEventCallback = (CreateBudgetUIEvent)-> Unit
 
+data class CreateBudgetUIState(
+    val budget: Budget = Budget(name = "", details = ""),
+    val categories: List<BudgetCategory> = listOf(),
+    val isSaving: Boolean = false,
+) {
+    val canSave: Boolean
+        get() = budget.name.isNotBlank() && categories.isNotEmpty()
+}

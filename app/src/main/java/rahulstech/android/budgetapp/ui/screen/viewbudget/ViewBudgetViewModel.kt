@@ -17,7 +17,8 @@ import rahulstech.android.budgetapp.repository.model.BudgetCategory
 import rahulstech.android.budgetapp.repository.model.Expense
 import rahulstech.android.budgetapp.ui.components.BudgetCategoryDialogState
 import rahulstech.android.budgetapp.ui.components.BudgetDialogState
-import rahulstech.android.budgetapp.ui.components.ExpenseDialogState
+import rahulstech.android.budgetapp.ui.components.CategoryDialogStateManager
+import rahulstech.android.budgetapp.ui.components.ExpenseDialogStateManager
 import rahulstech.android.budgetapp.ui.screen.UIAction
 import rahulstech.android.budgetapp.ui.screen.UIState
 import javax.inject.Inject
@@ -146,20 +147,27 @@ class ViewBudgetViewModel @Inject constructor(
         _budgetEditDialogState.value = state
     }
 
-    private val _categoryDialogState = MutableStateFlow(BudgetCategoryDialogState())
-    val categoryDialogState: StateFlow<BudgetCategoryDialogState> = _categoryDialogState.asStateFlow()
+//    private val _categoryDialogState = MutableStateFlow(BudgetCategoryDialogState())
+//    val categoryDialogState: StateFlow<BudgetCategoryDialogState> = _categoryDialogState.asStateFlow()
+//
+//    fun updateCategoryDialogState(state: BudgetCategoryDialogState) {
+//        _categoryDialogState.value = state
+//    }
 
-    fun updateCategoryDialogState(state: BudgetCategoryDialogState) {
-        _categoryDialogState.value = state
-    }
-    private val _expenseDialogState = MutableStateFlow(ExpenseDialogState())
-    val expenseDialogState: StateFlow<ExpenseDialogState> = _expenseDialogState.asStateFlow()
+    // category dialog
 
-    fun updateExpenseDialogState(state: ExpenseDialogState) {
-        _expenseDialogState.value = state
-    }
+    val categoryDialogStateManager = CategoryDialogStateManager()
 
+    val categoryDialogState get() = categoryDialogStateManager.categoryDialogStateFlow
+
+    // expense dialog
+    val expenseDialogStateManager = ExpenseDialogStateManager()
+
+    val expenseDialogState get() = expenseDialogStateManager.expenseDialogStateFlow
+
+    // delete budget dialog
     private val _deleteBudgetDialogState = MutableStateFlow(BudgetDialogState())
+
     val deleteBudgetDialogState: StateFlow<BudgetDialogState> = _deleteBudgetDialogState.asStateFlow()
 
     fun updateDeleteBudgetDialogState(state: BudgetDialogState) {

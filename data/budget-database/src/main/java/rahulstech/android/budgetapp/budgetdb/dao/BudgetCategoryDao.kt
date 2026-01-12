@@ -8,7 +8,7 @@ import androidx.room.Query
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 import rahulstech.android.budgetapp.budgetdb.entity.BudgetCategoryEntity
-import rahulstech.android.budgetapp.budgetdb.model.BudgetCategoryListModel
+import rahulstech.android.budgetapp.budgetdb.model.BudgetCategoryModel
 
 @Dao
 interface BudgetCategoryDao {
@@ -19,8 +19,8 @@ interface BudgetCategoryDao {
     @Query("SELECT * FROM `categories` WHERE `id`= :id")
     fun observeCategoryById(id: Long): Flow<BudgetCategoryEntity?>
 
-    @Query("SELECT `id`,`budgetId`,`name`,`allocation`, `totalExpense` FROM `categories` WHERE `budgetId` = :budgetId")
-    fun observeCategoriesOfBudget(budgetId: Long): Flow<List<BudgetCategoryListModel>>
+    @Query("SELECT `id`,`budgetId`,`name`, `note`, `allocation`, `totalExpense` FROM `categories` WHERE `budgetId` = :budgetId")
+    fun observeCategoriesOfBudget(budgetId: Long): Flow<List<BudgetCategoryModel>>
 
     @Update
     suspend fun update(category: BudgetCategoryEntity)

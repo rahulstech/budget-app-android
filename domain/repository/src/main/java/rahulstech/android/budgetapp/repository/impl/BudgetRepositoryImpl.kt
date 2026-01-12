@@ -153,6 +153,7 @@ class BudgetRepositoryImpl(val db: IBudgetDB): BudgetRepository {
                         id = model.id,
                         budgetId = model.budgetId,
                         name = model.name,
+                        note = model.note,
                         allocation = model.allocation,
                         totalExpense = model.totalExpense
                     )
@@ -321,4 +322,10 @@ class BudgetRepositoryImpl(val db: IBudgetDB): BudgetRepository {
         }
     }
 
+    override suspend fun removeMultipleExpenses(expenses: List<Expense>, reverseAmounts: Boolean) =
+        db.runInTransaction {
+            for (expense in expenses) {
+                removeExpense(expense, reverseAmounts)
+            }
+        }
 }

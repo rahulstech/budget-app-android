@@ -33,4 +33,6 @@ interface BudgetRepository {
     suspend fun editExpense(expense: Expense): Expense?
 
     suspend fun removeExpense(expense: Expense, reverseAmounts: Boolean = true)
+
+    suspend fun removeMultipleExpenses(expenses: List<Expense>, reverseAmounts: Boolean = true)
 }

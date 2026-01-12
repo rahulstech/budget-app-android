@@ -14,11 +14,3 @@ data class BudgetCategoryModel(
     val allocation: Double,
     val totalExpense: Double,
 )
-
-data class BudgetCategoryListModel(
-    val id: Long,
-    val budgetId: Long,
-    val name: String,
-    val allocation: Double,
-    val totalExpense: Double,
-)

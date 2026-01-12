@@ -13,6 +13,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.rounded.DateRange
 import androidx.compose.material3.DatePicker
@@ -29,6 +30,7 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -36,8 +38,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import rahulstech.android.budgetapp.R
 import rahulstech.android.budgetapp.repository.model.BudgetCategory
 import rahulstech.android.budgetapp.repository.model.Expense
@@ -52,9 +55,42 @@ data class ExpenseDialogState(
     val showDialog: Boolean = false,
     val isSaving: Boolean = false,
     val isEditing: Boolean = false,
+    val budgetId: Long = 0,
     val category: BudgetCategory = BUDGET_CATEGORY_PLACEHOLDER,
+    val canChooseCategory: Boolean = true,
     val expense: Expense = EXPENSE_PLACEHOLDER,
 )
+
+class ExpenseDialogStateManager(initialState: ExpenseDialogState = ExpenseDialogState()) {
+
+    private val _expenseDialogStateFlow = MutableStateFlow(initialState)
+
+    val expenseDialogStateFlow = _expenseDialogStateFlow.asStateFlow()
+
+    val expenseDialogState get() = _expenseDialogStateFlow.value
+
+    fun updateSaving(isSaving: Boolean, expense: Expense? = null) {
+        _expenseDialogStateFlow.value = if (null == expense) {
+            _expenseDialogStateFlow.value.copy(isSaving = isSaving)
+        }
+        else {
+            _expenseDialogStateFlow.value.copy(isSaving = isSaving, expense = expense)
+        }
+    }
+
+    fun showDialog(budgetId: Long, category: BudgetCategory? = null) {
+        _expenseDialogStateFlow.value = if (null == category) {
+            ExpenseDialogState(showDialog = true, budgetId = budgetId)
+        }
+        else {
+            ExpenseDialogState(showDialog = true, budgetId = budgetId, category = category, canChooseCategory = false)
+        }
+    }
+
+    fun hideDialog() {
+        _expenseDialogStateFlow.value = ExpenseDialogState()
+    }
+}
 
 private val EXPENSE_DATE_FORMATER = DateTimeFormatter.ofPattern("dd-MMMM-yyyy")
 
@@ -64,18 +100,19 @@ private val LocalDateSaver = Saver<LocalDate, Long>(
 )
 
 @Composable
-fun ExpenseDialog(onDismiss: ()-> Unit,
+fun ExpenseDialog(expenseDialogState: ExpenseDialogState,
+                  onDismiss: ()-> Unit,
                   onSaveExpense: (Expense)-> Unit,
-                  expenseDialogState: ExpenseDialogState
                   )
 {
     val enabled = !expenseDialogState.isSaving
-    val category = expenseDialogState.category
     val initialExpense = expenseDialogState.expense
     var amount by rememberSaveable { mutableStateOf(initialExpense.amount.toString()) }
     var note by rememberSaveable { mutableStateOf("") }
     var date by rememberSaveable(stateSaver = LocalDateSaver) { mutableStateOf(initialExpense.date) }
     var showDatePicker by rememberSaveable { mutableStateOf(false) }
+    var showCategoryChooser by rememberSaveable { mutableStateOf(false) }
+    var selectedCategory by remember { mutableStateOf<BudgetCategory?>(expenseDialogState.category) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     ModalBottomSheet(
@@ -91,24 +128,11 @@ fun ExpenseDialog(onDismiss: ()-> Unit,
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
 
-                Column(
+                Text(
                     modifier = Modifier.fillMaxWidth().weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text(
-                        modifier = Modifier.fillMaxWidth(),
-                        text = category.name,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        style = MaterialTheme.typography.titleLarge,
-                    )
-
-                    Text(
-                        modifier = Modifier.fillMaxWidth(),
-                        text = stringResource(R.string.title_add_expense),
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                }
+                    text = stringResource(R.string.title_add_expense),
+                    style = MaterialTheme.typography.titleLarge,
+                )
 
                 // cancel
                 TextButton(
@@ -120,12 +144,12 @@ fun ExpenseDialog(onDismiss: ()-> Unit,
 
                 // save
                 TextButton(
-                    enabled = enabled && amount.isNotEmpty(),
+                    enabled = enabled && amount.isNotEmpty() && null != selectedCategory,
                     onClick = {
                         val expense = Expense(
                             id = if (expenseDialogState.isEditing) initialExpense.id else 0,
-                            budgetId = category.budgetId,
-                            categoryId = category.id,
+                            budgetId = selectedCategory!!.budgetId,
+                            categoryId = selectedCategory!!.id,
                             amount = amount.toDoubleOrNull() ?: 0.0,
                             note = note,
                             date = date
@@ -144,6 +168,23 @@ fun ExpenseDialog(onDismiss: ()-> Unit,
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(space = 12.dp)
             ) {
+                // category
+                OutlinedTextField(
+                    modifier = Modifier.fillMaxWidth(),
+                    value = selectedCategory?.name ?: "",
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text(stringResource(R.string.label_budget_category)) },
+                    singleLine = true,
+                    trailingIcon = {
+                        if (expenseDialogState.canChooseCategory) {
+                            IconButton(onClick = { showCategoryChooser = true }) {
+                                Icon(Icons.Default.ArrowDropDown, stringResource(R.string.message_expense_date_picker))
+                            }
+                        }
+                    }
+                )
+
                 // date
                 OutlinedTextField(
                     modifier = Modifier.fillMaxWidth(),
@@ -207,6 +248,17 @@ fun ExpenseDialog(onDismiss: ()-> Unit,
             onDateSelected = {
                 showDatePicker = false
                 date = it
+            }
+        )
+    }
+
+    if (showCategoryChooser) {
+        CategoryChooserDialog(
+            budgetId = expenseDialogState.budgetId,
+            onDismiss = { showCategoryChooser = false },
+            onClickChoose = { categories ->
+                showCategoryChooser = false
+                selectedCategory = if (categories.isEmpty()) null else categories.first()
             }
         )
     }

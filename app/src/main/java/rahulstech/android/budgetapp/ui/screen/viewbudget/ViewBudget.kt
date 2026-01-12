@@ -57,11 +57,9 @@ import rahulstech.android.budgetapp.repository.model.Expense
 import rahulstech.android.budgetapp.ui.components.BudgetDetailsDialog
 import rahulstech.android.budgetapp.ui.components.BudgetEditDialog
 import rahulstech.android.budgetapp.ui.components.CategoryDialog
-import rahulstech.android.budgetapp.ui.components.BudgetCategoryDialogState
 import rahulstech.android.budgetapp.ui.components.BudgetDialogState
 import rahulstech.android.budgetapp.ui.components.DeleteBudgetWarningDialog
 import rahulstech.android.budgetapp.ui.components.ExpenseDialog
-import rahulstech.android.budgetapp.ui.components.ExpenseDialogState
 import rahulstech.android.budgetapp.ui.components.ExpenseLinearProgress
 import rahulstech.android.budgetapp.ui.components.shimmer
 import rahulstech.android.budgetapp.ui.screen.NavigationCallback
@@ -75,7 +73,6 @@ import rahulstech.android.budgetapp.ui.theme.primaryTopAppBarColors
 import rahulstech.android.budgetapp.ui.theme.tileColors
 
 private const val TAG = "ViewBudget"
-
 
 @Composable
 fun ViewBudgetRoute(budgetId: Long,
@@ -125,11 +122,11 @@ fun ViewBudgetRoute(budgetId: Long,
                         }
                         is ViewBudgetUIEvent.EditBudgetEvent -> { viewModel.editBudget(event.budget) }
                         is ViewBudgetUIEvent.ShowAddCategoryDialogEvent -> {
-                            viewModel.updateCategoryDialogState(BudgetCategoryDialogState(showDialog = true, budget = event.budget))
+                            viewModel.categoryDialogStateManager.showDialog(budget = event.budget)
                         }
                         is ViewBudgetUIEvent.AddCategoryEvent -> { viewModel.addCategory(event.category) }
                         is ViewBudgetUIEvent.ShowAddExpenseDialogEvent -> {
-                            viewModel.updateExpenseDialogState(ExpenseDialogState(showDialog = true, category = event.category))
+                            viewModel.expenseDialogStateManager.showDialog(budgetId,event.category)
                         }
                         is ViewBudgetUIEvent.AddExpenseEvent -> { viewModel.addExpense(event.expense) }
                         is ViewBudgetUIEvent.ViewExpensesEvent -> {
@@ -179,21 +176,16 @@ fun ViewBudgetRoute(budgetId: Long,
     val categorySaveState by viewModel.categorySaveState.collectAsStateWithLifecycle(UIState.Idle())
     LaunchedEffect(categorySaveState) {
         when(categorySaveState) {
+            is UIState.Loading -> {
+                viewModel.categoryDialogStateManager.updateSaving(true)
+            }
             is UIState.Success -> {
-                viewModel.updateCategoryDialogState(BudgetCategoryDialogState())
-                snackBarCallback(
-                    SnackBarEvent(
-                        message = context.getString(R.string.message_budget_category_save_success)
-                    )
-                )
+                viewModel.categoryDialogStateManager.hideDialog()
+                snackBarCallback(SnackBarEvent(message = context.getString(R.string.message_budget_category_save_success)))
             }
             is UIState.Error -> {
                 Log.e(TAG,"category not saved", (categorySaveState as UIState.Error).cause)
-                snackBarCallback(
-                    SnackBarEvent(
-                        message = context.getString(R.string.message_budget_category_save_error)
-                    )
-                )
+                snackBarCallback(SnackBarEvent(message = context.getString(R.string.message_budget_category_save_error)))
             }
             else -> {}
         }
@@ -202,10 +194,10 @@ fun ViewBudgetRoute(budgetId: Long,
     if (categoryDialogState.showDialog) {
         CategoryDialog(
             categoryDialogState = categoryDialogState,
-            onDismiss = { viewModel.updateCategoryDialogState(BudgetCategoryDialogState()) },
+            onDismiss = { viewModel.categoryDialogStateManager.hideDialog() },
             onClickSave = { category ->
                 // CategoryDialog already set the budgetId to the category
-                viewModel.updateCategoryDialogState(categoryDialogState.copy(isSaving = true, category = category))
+                viewModel.categoryDialogStateManager.updateSaving(true,category)
                 viewModel.addCategory(category)
             }
         )
@@ -214,13 +206,17 @@ fun ViewBudgetRoute(budgetId: Long,
     val expenseSaveState by viewModel.expenseSaveState.collectAsStateWithLifecycle(UIState.Idle())
     LaunchedEffect(expenseSaveState) {
         when(expenseSaveState) {
+            is UIState.Loading -> {
+                viewModel.expenseDialogStateManager.updateSaving(true)
+            }
+            is UIState.Error -> {
+                Log.e(TAG, "add expense error", (expenseSaveState as UIState.Error).cause)
+                viewModel.expenseDialogStateManager.updateSaving(false)
+                snackBarCallback(SnackBarEvent(message = context.getString(R.string.message_expense_add_error)))
+            }
             is UIState.Success<Expense> -> {
-                viewModel.updateExpenseDialogState(ExpenseDialogState())
-                snackBarCallback(
-                    SnackBarEvent(
-                        message = context.getString(R.string.message_expense_add_successful),
-                    )
-                )
+                viewModel.expenseDialogStateManager.hideDialog()
+                snackBarCallback(SnackBarEvent(message = context.getString(R.string.message_expense_add_successful)))
             }
             else -> {}
         }
@@ -228,11 +224,11 @@ fun ViewBudgetRoute(budgetId: Long,
 
     if (expenseDialogState.showDialog) {
         ExpenseDialog(
-            expenseDialogState = expenseDialogState,
-            onDismiss = { viewModel.updateExpenseDialogState(ExpenseDialogState()) },
+            expenseDialogState = viewModel.expenseDialogStateManager.expenseDialogState,
+            onDismiss = { viewModel.expenseDialogStateManager.hideDialog() },
             onSaveExpense = { expense ->
                 // ExpenseDialog already set the budgetId and categoryId to the expense
-                viewModel.updateExpenseDialogState(expenseDialogState.copy(isSaving = true, expense = expense))
+                viewModel.expenseDialogStateManager.updateSaving(true, expense)
                 viewModel.addExpense(expense)
             }
         )
@@ -521,49 +517,3 @@ fun CategoryCard(category: BudgetCategory,
         }
     }
 }
-
-//@Preview(
-//    showBackground = true,
-//    device = PIXEL,
-//)
-//@Composable
-//fun BudgetDetailsScreenPreview() {
-//    ViewBudgetScreen(
-//        budget = Budget(
-//            id = 1,
-//            name = "Darjeeling Tour",
-//            details = "Budget for Darjeeling tour of me and Rivu in February, 2026",
-//            totalExpense = 7000.0,
-//            totalAllocation = 15000.0,
-//            categories = listOf(
-//                BudgetCategory(
-//                    id = 1,
-//                    budgetId = 1,
-//                    name = "Travelling",
-//                    note = "All cost of travelling",
-//                    allocation = 9000.0,
-//                    totalExpense = 7200.0
-//                ),
-//
-//                BudgetCategory(
-//                    id = 2,
-//                    budgetId = 1,
-//                    name = "This is a very long name of the category to test how long text it can contain",
-//                    note = "A very very very very very very very very very very very long note for the category to test how long text it  can fit",
-//                    allocation = 3000.0,
-//                    totalExpense = 2900.0
-//                ),
-//
-//                BudgetCategory(
-//                    id = 3,
-//                    budgetId = 1,
-//                    name = "Hotels",
-//                    note = "All cost of hotels",
-//                    allocation = 7500.0,
-//                    totalExpense = 8000.0
-//                ),
-//            )
-//        )
-//    )
-//}
-

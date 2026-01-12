@@ -14,6 +14,7 @@ import rahulstech.android.budgetapp.repository.BudgetRepository
 import rahulstech.android.budgetapp.repository.model.Budget
 import rahulstech.android.budgetapp.repository.model.BudgetCategory
 import rahulstech.android.budgetapp.ui.components.BudgetCategoryDialogState
+import rahulstech.android.budgetapp.ui.components.CategoryDialogStateManager
 import rahulstech.android.budgetapp.ui.screen.UIState
 import java.util.UUID
 import javax.inject.Inject
@@ -48,6 +49,7 @@ class CreateBudgetViewModel @Inject constructor(val repo: BudgetRepository): Vie
     private val _createBudgetUiState = MutableStateFlow(CreateBudgetUIState())
 
     private var lastCategoryId: Long = 0
+
     val createBudgetUIState: StateFlow<CreateBudgetUIState> = _createBudgetUiState.asStateFlow()
 
     fun updateBudget(budget: Budget) {
@@ -81,10 +83,14 @@ class CreateBudgetViewModel @Inject constructor(val repo: BudgetRepository): Vie
         )
     }
 
-    private val _categoryDialogState = MutableStateFlow(BudgetCategoryDialogState())
-    val categoryDialogState: StateFlow<BudgetCategoryDialogState> = _categoryDialogState.asStateFlow()
+//    private val _categoryDialogState = MutableStateFlow(BudgetCategoryDialogState())
+//    val categoryDialogState: StateFlow<BudgetCategoryDialogState> = _categoryDialogState.asStateFlow()
+//
+//    fun updateCategoryDialogState(state: BudgetCategoryDialogState) {
+//        _categoryDialogState.value = state
+//    }
 
-    fun updateCategoryDialogState(state: BudgetCategoryDialogState) {
-        _categoryDialogState.value = state
-    }
+    val categoryDialogStateManager = CategoryDialogStateManager()
+
+    val categoryDialogState get() = categoryDialogStateManager.categoryDialogStateFlow
 }

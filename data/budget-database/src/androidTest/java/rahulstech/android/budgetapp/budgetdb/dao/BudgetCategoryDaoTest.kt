@@ -13,7 +13,7 @@ import rahulstech.android.budgetapp.budgetdb.BudgetDB
 import rahulstech.android.budgetapp.budgetdb.createInMemoryBudgetDB
 import rahulstech.android.budgetapp.budgetdb.entity.BudgetCategoryEntity
 import rahulstech.android.budgetapp.budgetdb.fakeData
-import rahulstech.android.budgetapp.budgetdb.model.BudgetCategoryListModel
+import rahulstech.android.budgetapp.budgetdb.model.BudgetCategoryModel
 
 @RunWith(AndroidJUnit4::class)
 class BudgetCategoryDaoTest {
@@ -52,17 +52,18 @@ class BudgetCategoryDaoTest {
 
     @Test
     fun observeAllCategoriesOfBudget() = runBlocking{
-        val budgetId = 4L
+        val budgetId = 1L
         val categories = dao.observeCategoriesOfBudget(budgetId).first()
 
-        val expectedSize = 5
+        val expectedSize = 4
         assertEquals(expectedSize, categories.size)
 
         val expected = (1..expectedSize).map { position ->
-            BudgetCategoryListModel(
+            BudgetCategoryModel(
                 id = budgetId * 100 + position,
                 budgetId = budgetId,
                 name = "Category $budgetId-$position",
+                note = "note for Category $budgetId-$position",
                 allocation = position * 500.0,
                 totalExpense = position * 300.0
             )
