@@ -3,7 +3,6 @@ package rahulstech.android.budgetapp.ui.components
 import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,11 +20,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
@@ -42,6 +39,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
@@ -73,7 +71,7 @@ data class BudgetCategoryDialogState(
     val isSaving: Boolean = false,
     val isEditMode: Boolean = false,
     val category: BudgetCategory = BUDGET_CATEGORY_PLACEHOLDER,
-    val budget: Budget = BUDGET_PLACEHOLDER
+    val budget: Budget? = null
 )
 
 class CategoryDialogStateManager(initialState: BudgetCategoryDialogState = BudgetCategoryDialogState()) {
@@ -109,16 +107,14 @@ class CategoryDialogStateManager(initialState: BudgetCategoryDialogState = Budge
 }
 
 @Composable
-fun CategoryDialog(onDismiss: ()-> Unit,
+fun CategoryDialog(categoryDialogState: BudgetCategoryDialogState,
+                   onDismiss: ()-> Unit,
                    onClickSave: (BudgetCategory)-> Unit,
-                   categoryDialogState: BudgetCategoryDialogState,
                    )
 {
     val enabled = !categoryDialogState.isSaving
-    val budget = categoryDialogState.budget
     val initialCategory = categoryDialogState.category
     var name by rememberSaveable { mutableStateOf(initialCategory.name ) }
-    var note by rememberSaveable { mutableStateOf(initialCategory.note ) }
     var allocation by rememberSaveable { mutableStateOf(initialCategory.allocation.toString()) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -157,9 +153,8 @@ fun CategoryDialog(onDismiss: ()-> Unit,
                         val alloc = allocation.toDoubleOrNull() ?: 0.0
                         val category = BudgetCategory(
                             id = initialCategory.id,
-                            budgetId = budget.id,
+                            budgetId = categoryDialogState.budget?.id ?: initialCategory.budgetId,
                             name = name,
-                            note = note,
                             allocation = alloc
                         )
                         onClickSave(category)
@@ -189,32 +184,6 @@ fun CategoryDialog(onDismiss: ()-> Unit,
                     modifier = Modifier.fillMaxWidth(),
                 )
 
-                // category note
-                OutlinedTextField(
-                    value = note,
-                    onValueChange = { note = it },
-                    label = { Text(text = stringResource(R.string.label_budget_category_note)) },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(
-                        capitalization = KeyboardCapitalization.Sentences,
-                        keyboardType = KeyboardType.Text,
-                    ),
-                    trailingIcon = {
-                        if (note.isNotEmpty()) {
-                            IconButton(
-                                modifier = Modifier.focusable(false),
-                                onClick = { note = "" },
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Clear,
-                                    contentDescription = stringResource(R.string.message_clear_text)
-                                )
-                            }
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                )
-
                 Spacer(modifier = Modifier.height(12.dp))
 
                 // category allocation
@@ -222,6 +191,12 @@ fun CategoryDialog(onDismiss: ()-> Unit,
                     value = allocation,
                     onValueChange = { allocation = it },
                     // TODO: add currency symbol prefix
+                    prefix = {
+                        Icon(
+                            painterResource(R.drawable.baseline_currency_rupee_24),
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f))
+                    },
                     label = { Text(text = stringResource(R.string.label_allocation)) },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(

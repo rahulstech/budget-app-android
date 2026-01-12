@@ -18,7 +18,7 @@ import rahulstech.android.budgetapp.repository.model.Budget
 import rahulstech.android.budgetapp.repository.model.BudgetCategory
 import rahulstech.android.budgetapp.repository.model.Expense
 import rahulstech.android.budgetapp.repository.toEntity
-import rahulstech.android.budgetapp.repository.toModel
+import rahulstech.android.budgetapp.repository.toBudgetCategory
 
 class BudgetRepositoryImpl(val db: IBudgetDB): BudgetRepository {
 
@@ -76,7 +76,7 @@ class BudgetRepositoryImpl(val db: IBudgetDB): BudgetRepository {
         }
 
     override fun observeBudgetById(id: Long): Flow<Budget?> =
-        db.budgetDao.observeBudgetById(id).map { it?.toModel() }
+        db.budgetDao.observeBudgetById(id).map { it?.toBudgetCategory() }
 
     override fun observeAllBudgets(): Flow<PagingData<Budget>> {
         return Pager(
@@ -148,16 +148,7 @@ class BudgetRepositoryImpl(val db: IBudgetDB): BudgetRepository {
         return db.budgetCategoryDao
             .observeCategoriesOfBudget(budgetId)
             .map { list ->
-                list.map { model ->
-                    BudgetCategory(
-                        id = model.id,
-                        budgetId = model.budgetId,
-                        name = model.name,
-                        note = model.note,
-                        allocation = model.allocation,
-                        totalExpense = model.totalExpense
-                    )
-                }
+                list.map { it.toBudgetCategory() }
             }
     }
 

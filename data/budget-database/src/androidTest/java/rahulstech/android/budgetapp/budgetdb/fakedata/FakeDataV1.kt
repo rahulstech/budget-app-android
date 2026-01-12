@@ -32,8 +32,8 @@ class FakeDataV1: RoomDatabase.Callback() {
 
     fun insertBudgetCategories(db: SupportSQLiteDatabase, budgetId: Int, count: Int) {
         (1..count).forEach { position ->
-            db.execSQL("INSERT INTO `categories` (`id`,`budgetId`, `name`, `note`, `allocation`, `totalExpense`, `lastModified`) " +
-                    "VALUES (${budgetId * 100 + position}, $budgetId, 'Category $budgetId-$position', 'note for Category $budgetId-$position'," +
+            db.execSQL("INSERT INTO `categories` (`id`,`budgetId`, `name`, `allocation`, `totalExpense`, `lastModified`) " +
+                    "VALUES (${budgetId * 100 + position}, $budgetId, 'Category $budgetId-$position'," +
                     "${position * 500}, ${position * 300},${1768034005000L + position * 1500L })")
         }
     }

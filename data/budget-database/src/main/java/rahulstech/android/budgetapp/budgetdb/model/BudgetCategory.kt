@@ -10,7 +10,6 @@ data class BudgetCategoryModel(
     val id: Long,
     val budgetId: Long,
     val name: String,
-    val note: String,
     val allocation: Double,
     val totalExpense: Double,
 )

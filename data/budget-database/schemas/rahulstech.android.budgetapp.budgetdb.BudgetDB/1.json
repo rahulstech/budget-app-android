@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "06c76c10e0202f9d9e9e4ddf8fe007f8",
+    "identityHash": "a3ac79f743e70422d9546e72a8204a4b",
     "entities": [
       {
         "tableName": "budgets",
@@ -54,7 +54,7 @@
       },
       {
         "tableName": "categories",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `budgetId` INTEGER NOT NULL, `name` TEXT NOT NULL, `note` TEXT NOT NULL, `allocation` REAL NOT NULL, `totalExpense` REAL NOT NULL, `lastModified` INTEGER NOT NULL, FOREIGN KEY(`budgetId`) REFERENCES `budgets`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `budgetId` INTEGER NOT NULL, `name` TEXT NOT NULL, `allocation` REAL NOT NULL, `totalExpense` REAL NOT NULL, `lastModified` INTEGER NOT NULL, FOREIGN KEY(`budgetId`) REFERENCES `budgets`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
         "fields": [
           {
             "fieldPath": "id",
@@ -71,12 +71,6 @@
           {
             "fieldPath": "name",
             "columnName": "name",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "note",
-            "columnName": "note",
             "affinity": "TEXT",
             "notNull": true
           },
@@ -132,7 +126,7 @@
       },
       {
         "tableName": "expenses",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `budgetId` INTEGER NOT NULL, `note` TEXT, `categoryId` INTEGER NOT NULL, `amount` REAL NOT NULL, `date` INTEGER NOT NULL, `lastModified` INTEGER NOT NULL, FOREIGN KEY(`budgetId`) REFERENCES `budgets`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`categoryId`) REFERENCES `categories`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `budgetId` INTEGER NOT NULL, `categoryId` INTEGER NOT NULL, `amount` REAL NOT NULL, `date` INTEGER NOT NULL, `note` TEXT, `lastModified` INTEGER NOT NULL, FOREIGN KEY(`budgetId`) REFERENCES `budgets`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`categoryId`) REFERENCES `categories`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
         "fields": [
           {
             "fieldPath": "id",
@@ -145,11 +139,6 @@
             "columnName": "budgetId",
             "affinity": "INTEGER",
             "notNull": true
-          },
-          {
-            "fieldPath": "note",
-            "columnName": "note",
-            "affinity": "TEXT"
           },
           {
             "fieldPath": "categoryId",
@@ -168,6 +157,11 @@
             "columnName": "date",
             "affinity": "INTEGER",
             "notNull": true
+          },
+          {
+            "fieldPath": "note",
+            "columnName": "note",
+            "affinity": "TEXT"
           },
           {
             "fieldPath": "lastModified",
@@ -230,7 +224,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '06c76c10e0202f9d9e9e4ddf8fe007f8')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'a3ac79f743e70422d9546e72a8204a4b')"
     ]
   }
 }

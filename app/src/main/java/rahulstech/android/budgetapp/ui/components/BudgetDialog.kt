@@ -37,7 +37,7 @@ import rahulstech.android.budgetapp.ui.screen.BUDGET_PLACEHOLDER
 
 data class BudgetDialogState(
     val showDialog: Boolean = false,
-    val isLoading: Boolean = false,
+    val isSaving: Boolean = false,
     val budget: Budget = BUDGET_PLACEHOLDER,
 )
 
@@ -47,7 +47,7 @@ fun BudgetEditDialog(budgetDialogState: BudgetDialogState,
                      onClickSave: (Budget)-> Unit,
                  )
 {
-    val enabled = !budgetDialogState.isLoading
+    val enabled = !budgetDialogState.isSaving
     val budget = budgetDialogState.budget
     var name by rememberSaveable { mutableStateOf(budget.name) }
     var details by rememberSaveable { mutableStateOf(budget.details) }

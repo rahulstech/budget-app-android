@@ -19,7 +19,7 @@ interface BudgetCategoryDao {
     @Query("SELECT * FROM `categories` WHERE `id`= :id")
     fun observeCategoryById(id: Long): Flow<BudgetCategoryEntity?>
 
-    @Query("SELECT `id`,`budgetId`,`name`, `note`, `allocation`, `totalExpense` FROM `categories` WHERE `budgetId` = :budgetId")
+    @Query("SELECT `id`,`budgetId`,`name`, `allocation`, `totalExpense` FROM `categories` WHERE `budgetId` = :budgetId")
     fun observeCategoriesOfBudget(budgetId: Long): Flow<List<BudgetCategoryModel>>
 
     @Update

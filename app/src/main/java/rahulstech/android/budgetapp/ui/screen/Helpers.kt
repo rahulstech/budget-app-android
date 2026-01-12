@@ -1,5 +1,7 @@
 package rahulstech.android.budgetapp.ui.screen
 
+import android.content.Context
+import androidx.annotation.StringRes
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -42,4 +44,22 @@ class UIAction<A,R>(
             _uiState.tryEmit(UIState.Error(cause))
         }
     }
+}
+
+sealed interface UIText {
+    data class StringResource(@StringRes val resId: Int, val args: List<Any> = emptyList()): UIText
+    {
+        fun resolveString(context: Context): String = context.getString(resId,*args.toTypedArray())
+    }
+
+    data class PlainString(val value: String): UIText
+}
+
+sealed interface UISideEffect {
+
+    data class ShowSnackBar(val message: UIText): UISideEffect
+
+    data class NavigateTo(val event: NavigationEvent): UISideEffect
+
+    object ExitScreen: UISideEffect
 }

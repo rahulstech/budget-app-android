@@ -308,7 +308,7 @@ fun CategoryItem(category: BudgetCategory,
                  onClickEdit: (BudgetCategory)-> Unit)
 {
     Card(
-        modifier = Modifier.width(280.dp).height(240.dp),
+        modifier = Modifier.width(280.dp),
         shape = RoundedCornerShape(size = 20.dp),
         elevation = CardDefaults.cardElevation(4.dp)
     ) {
@@ -320,15 +320,6 @@ fun CategoryItem(category: BudgetCategory,
                 text = category.name,
                 style = MaterialTheme.typography.titleMedium,
                 maxLines = 1,
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Text(
-                text = category.note,
-                style = MaterialTheme.typography.bodyLarge,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
             )
 
             Spacer(modifier = Modifier.height(20.dp))

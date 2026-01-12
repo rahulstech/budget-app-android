@@ -37,7 +37,6 @@ class BudgetCategoryDaoTest {
         val category = BudgetCategoryEntity(
             budgetId = 1,
             name = "Test Category",
-            note = "note for Test Category of Budget 1",
             allocation = 1000.0,
             totalExpense = 0.0,
         )
@@ -63,7 +62,6 @@ class BudgetCategoryDaoTest {
                 id = budgetId * 100 + position,
                 budgetId = budgetId,
                 name = "Category $budgetId-$position",
-                note = "note for Category $budgetId-$position",
                 allocation = position * 500.0,
                 totalExpense = position * 300.0
             )
