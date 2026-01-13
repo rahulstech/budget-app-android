@@ -41,6 +41,7 @@
     <string name="title_delete_budget">Delete Budget</string>
     <string name="title_choose_category">Choose Category</string>
     <string name="title_choose_categories">Choose Categories</string>
+    <string name="title_delete_expense">Delete Expense</string>
 
     <string name="message_remove_category">remove %1$s</string>
     <string name="message_edit_category">edit %1$s</string>
@@ -53,7 +54,7 @@
     <string name="message_delete_budget">delete budget</string>
     <string name="message_add_at_least_one_category">add at least category</string>
     <string name="message_add_expense">add expense</string>
-    <string name="message_show_category_options">show category options</string>
+    <string name="message_show_more_options">show more options</string>
 
     <string name="message_budget_save_success">Budget saved</string>
     <string name="message_budget_save_error">Budget not saved for some error</string>
@@ -63,14 +64,18 @@
     <string name="message_budget_category_save_error">Something error occurred, category not saved</string>
     <string name="message_budget_category_remove_success">Category removed</string>
     <string name="message_budget_category_remove_error">Category not remove for some error</string>
-    <string name="message_expense_add_successful">Expense added</string>
-    <string name="message_expense_add_error">Expense not add for same error</string>
+    <string name="message_expense_save_successful">Expense saved</string>
+    <string name="message_expense_save_error">Expense not saved for same error</string>
+    <string name="message_expense_remove_error">Expense not removed for same error</string>
     <string name="message_budget_not_found">Budget not found</string>
     <string name="message_warning_delete_budget">
-        This budget will be delete permanently. There is no way to restore this budget later. Do you still want to proceed ?
+        You are about to loose all your category and expenses records permanently. Do you still want to proceed ?
     </string>
     <string name="message_warning_delete_budget_category">
         Permanently delete the category %1$s ?
+    </string>
+    <string name="message_warning_delete_expense">
+        Want to delete the expense permanently ?
     </string>
 
 

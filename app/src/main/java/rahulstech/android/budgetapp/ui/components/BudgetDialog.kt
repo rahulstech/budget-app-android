@@ -170,7 +170,7 @@ fun BudgetDetailsDialog(details: String,
 }
 
 @Composable
-fun DeleteBudgetWarningDialog(state: BudgetDialogState,
+fun DeleteBudgetWarningDialog(budget: Budget,
                               onDismiss: ()-> Unit,
                               onClickDelete: (Budget)-> Unit)
 {
@@ -197,9 +197,11 @@ fun DeleteBudgetWarningDialog(state: BudgetDialogState,
                         .height(56.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End)
                 ) {
-                    TextButton(onClick = { onClickDelete(state.budget) }) { Text(stringResource(R.string.label_yes))}
+                    // yes
+                    TextButton(onClick = { onClickDelete(budget) }) { Text(stringResource(R.string.label_yes))}
 
-                    TextButton(onClick = onDismiss) { Text(stringResource(R.string.label_cancel)) }
+                    // no
+                    TextButton(onClick = onDismiss) { Text(stringResource(R.string.label_no)) }
                 }
             }
         }

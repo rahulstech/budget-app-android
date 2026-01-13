@@ -192,12 +192,12 @@ class ViewBudgetViewModel @Inject constructor(val repo: BudgetRepository): ViewM
                 updateAddExpenseDialog(true, expense)
                 repo.addExpense(expense)
                 hideAddExpenseDialog()
-                _effect.send(UISideEffect.ShowSnackBar(UIText.StringResource(R.string.message_expense_add_successful)))
+                _effect.send(UISideEffect.ShowSnackBar(UIText.StringResource(R.string.message_expense_save_successful)))
             }
             catch (cause: Throwable) {
                 Log.e(TAG, "add expense error", cause)
                 updateAddExpenseDialog(isSaving = false)
-                _effect.send(UISideEffect.ShowSnackBar(UIText.StringResource(R.string.message_expense_add_error)))
+                _effect.send(UISideEffect.ShowSnackBar(UIText.StringResource(R.string.message_expense_save_error)))
             }
         }
     }

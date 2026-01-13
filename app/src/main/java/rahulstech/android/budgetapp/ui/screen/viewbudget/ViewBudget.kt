@@ -163,7 +163,7 @@ fun ViewBudgetRoute(budgetId: Long,
 
     if (uiState.deleteBudgetDialog.showDialog) {
         DeleteBudgetWarningDialog(
-            state = uiState.deleteBudgetDialog,
+            budget = uiState.deleteBudgetDialog.budget,
             onDismiss = { viewModel.hideDeleteBudgetDialog() },
             onClickDelete = { budget ->
                 viewModel.hideDeleteBudgetDialog()
@@ -420,7 +420,7 @@ fun CategoryCard(category: BudgetCategory,
                 )
 
                 IconButton(onClick = { onUIEvent(ViewBudgetUIEvent.ShowCategoryOptionsEvent(category)) }) {
-                    Icon(Icons.Default.MoreVert, stringResource(R.string.message_show_category_options))
+                    Icon(Icons.Default.MoreVert, stringResource(R.string.message_show_more_options))
                 }
             }
 
@@ -519,9 +519,11 @@ fun DeleteCategoryWarningDialog(category: BudgetCategory,
                         .height(56.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End)
                 ) {
+                    // yes
                     TextButton(onClick = { onClickDelete(category) }) { Text(stringResource(R.string.label_yes))}
 
-                    TextButton(onClick = onDismiss) { Text(stringResource(R.string.label_cancel)) }
+                    // no
+                    TextButton(onClick = onDismiss) { Text(stringResource(R.string.label_no)) }
                 }
             }
         }

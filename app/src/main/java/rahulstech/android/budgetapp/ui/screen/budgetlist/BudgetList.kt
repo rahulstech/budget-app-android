@@ -86,7 +86,7 @@ fun BudgetListScreen(budgets: LazyPagingItems<Budget>,
         floatingActionButton = {
             ExtendedFloatingActionButton (
                 shape = RoundedCornerShape(percent = 50),
-                containerColor = MaterialTheme.colorScheme.secondary,
+                containerColor = MaterialTheme.colorScheme.primary,
                 onClick = onClickCreateBudget
             ) {
                 Icon(Icons.Default.Add, null)

@@ -39,8 +39,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import rahulstech.android.budgetapp.R
 import rahulstech.android.budgetapp.repository.model.BudgetCategory
 import rahulstech.android.budgetapp.repository.model.Expense
@@ -54,43 +52,11 @@ import java.util.concurrent.TimeUnit
 data class ExpenseDialogState(
     val showDialog: Boolean = false,
     val isSaving: Boolean = false,
-    val isEditing: Boolean = false,
     val budgetId: Long = 0,
     val category: BudgetCategory = BUDGET_CATEGORY_PLACEHOLDER,
     val canChooseCategory: Boolean = true,
     val expense: Expense = EXPENSE_PLACEHOLDER,
 )
-
-class ExpenseDialogStateManager(initialState: ExpenseDialogState = ExpenseDialogState()) {
-
-    private val _expenseDialogStateFlow = MutableStateFlow(initialState)
-
-    val expenseDialogStateFlow = _expenseDialogStateFlow.asStateFlow()
-
-    val expenseDialogState get() = _expenseDialogStateFlow.value
-
-    fun updateSaving(isSaving: Boolean, expense: Expense? = null) {
-        _expenseDialogStateFlow.value = if (null == expense) {
-            _expenseDialogStateFlow.value.copy(isSaving = isSaving)
-        }
-        else {
-            _expenseDialogStateFlow.value.copy(isSaving = isSaving, expense = expense)
-        }
-    }
-
-    fun showDialog(budgetId: Long, category: BudgetCategory? = null) {
-        _expenseDialogStateFlow.value = if (null == category) {
-            ExpenseDialogState(showDialog = true, budgetId = budgetId)
-        }
-        else {
-            ExpenseDialogState(showDialog = true, budgetId = budgetId, category = category, canChooseCategory = false)
-        }
-    }
-
-    fun hideDialog() {
-        _expenseDialogStateFlow.value = ExpenseDialogState()
-    }
-}
 
 private val EXPENSE_DATE_FORMATER = DateTimeFormatter.ofPattern("dd-MMMM-yyyy")
 
@@ -147,7 +113,7 @@ fun ExpenseDialog(expenseDialogState: ExpenseDialogState,
                     enabled = enabled && amount.isNotEmpty() && null != selectedCategory,
                     onClick = {
                         val expense = Expense(
-                            id = if (expenseDialogState.isEditing) initialExpense.id else 0,
+                            id = initialExpense.id,
                             budgetId = selectedCategory!!.budgetId,
                             categoryId = selectedCategory!!.id,
                             amount = amount.toDoubleOrNull() ?: 0.0,
