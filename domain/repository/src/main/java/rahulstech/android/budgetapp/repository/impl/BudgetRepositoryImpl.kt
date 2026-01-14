@@ -4,15 +4,15 @@ import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.map
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.withContext
 import rahulstech.android.budgetapp.budgetdb.IBudgetDB
+import rahulstech.android.budgetapp.budgetdb.entity.BudgetCategoryEntity
 import rahulstech.android.budgetapp.budgetdb.entity.BudgetEntity
+import rahulstech.android.budgetapp.budgetdb.entity.ExpenseEntity
 import rahulstech.android.budgetapp.repository.BudgetRepository
+import rahulstech.android.budgetapp.repository.BudgetRepositoryException
 import rahulstech.android.budgetapp.repository.ExpenseFilterParams
 import rahulstech.android.budgetapp.repository.model.Budget
 import rahulstech.android.budgetapp.repository.model.BudgetCategory
@@ -101,43 +101,33 @@ class BudgetRepositoryImpl(val db: IBudgetDB): BudgetRepository {
     }
 
     override suspend fun editBudget(budget: Budget): Budget?  = db.runInTransaction {
-        val existing = db.budgetDao
+        val old = db.budgetDao
             .observeBudgetById(budget.id)
             .first()
             ?: return@runInTransaction null
 
-        val updated = existing.copy(
-            name = budget.name,
-            details = budget.details,
-            lastModified = System.currentTimeMillis()
-        )
+        val updated = budget.copy(totalExpense = old.totalExpense, totalAllocation = old.totalAllocation)
+        db.budgetDao.update(updated.toEntity())
 
-        db.budgetDao.update(updated)
-
-        return@runInTransaction budget.copy(
-            totalAllocation = existing.totalAllocation,
-            totalExpense = existing.totalExpense
-        )
+        updated
     }
 
-    override suspend fun removeBudget(budget: Budget) = coroutineScope {
-        withContext(Dispatchers.IO) {
-            db.budgetDao.delete(budget.toEntity())
-        }
+    override suspend fun removeBudget(budget: Budget) = db.runInTransaction {
+        db.budgetDao.delete(budget.toEntity())
     }
 
     override suspend fun addCategory(category: BudgetCategory): BudgetCategory =
         db.runInTransaction {
 
-            val budget = db.budgetDao
-                .observeBudgetById(category.budgetId)
-                .first() ?: return@runInTransaction category // TODO: throw budget not found
+            val budget = getBudgetEntityById(category.budgetId)
+                ?: throw BudgetRepositoryException.budgetNotFound(category.budgetId)
 
             val id = db.budgetCategoryDao.insert(category.copy(id = 0).toEntity())
 
             db.budgetDao.update(
                 budget.copy(
-                    totalAllocation = budget.totalAllocation + category.allocation
+                    totalAllocation = budget.totalAllocation + category.allocation,
+                    lastModified = System.currentTimeMillis()
                 )
             )
 
@@ -154,21 +144,18 @@ class BudgetRepositoryImpl(val db: IBudgetDB): BudgetRepository {
 
     override suspend fun editCategory(category: BudgetCategory): BudgetCategory? =
         db.runInTransaction {
-            val old = db.budgetCategoryDao
-                .observeCategoryById(category.id)
-                .first() ?: return@runInTransaction null
+            val old = getBudgetCategoryEntityById(category.id) ?: return@runInTransaction null
+
+            val budget = getBudgetEntityById(category.budgetId) ?: return@runInTransaction null
 
             val allocationDiff = category.allocation - old.allocation
 
-            db.budgetCategoryDao.update(category.toEntity())
-
-            val budget = db.budgetDao
-                .observeBudgetById(category.budgetId)
-                .first() ?: return@runInTransaction category
+            db.budgetCategoryDao.update(category.copy(totalExpense = old.totalExpense).toEntity())
 
             db.budgetDao.update(
                 budget.copy(
-                    totalAllocation = budget.totalAllocation + allocationDiff
+                    totalAllocation = budget.totalAllocation + allocationDiff,
+                    lastModified = System.currentTimeMillis()
                 )
             )
 
@@ -177,21 +164,17 @@ class BudgetRepositoryImpl(val db: IBudgetDB): BudgetRepository {
 
     override suspend fun removeCategory(category: BudgetCategory, reverseAmounts: Boolean) {
         db.runInTransaction {
-            val old = db.budgetCategoryDao
-                .observeCategoryById(category.id)
-                .first() ?: return@runInTransaction
+            val old = getBudgetCategoryEntityById(category.id) ?: return@runInTransaction
+            val budget = getBudgetEntityById(category.budgetId) ?: return@runInTransaction
 
             db.budgetCategoryDao.delete(category.toEntity())
 
             if (reverseAmounts) {
-                val budget = db.budgetDao
-                    .observeBudgetById(category.budgetId)
-                    .first() ?: return@runInTransaction
-
                 db.budgetDao.update(
                     budget.copy(
                         totalAllocation = budget.totalAllocation - old.allocation,
-                        totalExpense = budget.totalExpense - old.totalExpense
+                        totalExpense = budget.totalExpense - old.totalExpense,
+                        lastModified = System.currentTimeMillis()
                     )
                 )
             }
@@ -200,25 +183,25 @@ class BudgetRepositoryImpl(val db: IBudgetDB): BudgetRepository {
 
     override suspend fun addExpense(expense: Expense): Expense =
         db.runInTransaction {
-            val budget = db.budgetDao
-                .observeBudgetById(expense.budgetId)
-                .first() ?: return@runInTransaction expense // TODO: throw budget not found
+            val budget = getBudgetEntityById(expense.budgetId)
+                ?: throw BudgetRepositoryException.budgetNotFound(expense.budgetId)
 
-            val category = db.budgetCategoryDao
-                .observeCategoryById(expense.categoryId)
-                .first() ?: return@runInTransaction expense // TODO: throw category not found
+            val category = getBudgetCategoryEntityById(expense.categoryId)
+                ?: throw BudgetRepositoryException.categoryNotFound(expense.categoryId)
 
             val id = db.expenseDao.insert(expense.toEntity())
 
             db.budgetCategoryDao.update(
                 category.copy(
-                    totalExpense = category.totalExpense + expense.amount
+                    totalExpense = category.totalExpense + expense.amount,
+                    lastModified = System.currentTimeMillis()
                 )
             )
 
             db.budgetDao.update(
                 budget.copy(
-                    totalExpense = budget.totalExpense + expense.amount
+                    totalExpense = budget.totalExpense + expense.amount,
+                    lastModified = System.currentTimeMillis()
                 )
             )
 
@@ -254,69 +237,60 @@ class BudgetRepositoryImpl(val db: IBudgetDB): BudgetRepository {
 
     override suspend fun editExpense(expense: Expense): Expense? =
         db.runInTransaction {
-            val old = db.expenseDao
-                .observeExpenseById(expense.id)
-                .first() ?: return@runInTransaction null
-
+            val old = getExpenseById(expense.id) ?: return@runInTransaction null
+            val category = getBudgetCategoryEntityById(expense.categoryId) ?: return@runInTransaction null
+            val budget = getBudgetEntityById(expense.budgetId) ?: return@runInTransaction null
             val diff = expense.amount - old.amount
 
-            db.expenseDao.update(expense.copy(id = 0).toEntity())
-            val copy = expense.copy()
-
-            // update totalExpense in BudgetCategory
-            val category = db.budgetCategoryDao
-                .observeCategoryById(expense.categoryId)
-                .first() ?: return@runInTransaction copy
-
+            db.expenseDao.update(expense.toEntity())
             db.budgetCategoryDao.update(
-                category.copy(totalExpense = category.totalExpense + diff)
+                category.copy(
+                    totalExpense = category.totalExpense + diff, lastModified = System.currentTimeMillis()
+                )
             )
-
-            // update totalExpense in Budget
-            val budget = db.budgetDao
-                .observeBudgetById(expense.budgetId)
-                .first() ?: return@runInTransaction copy
-
             db.budgetDao.update(
-                budget.copy(totalExpense = budget.totalExpense + diff)
+                budget.copy(
+                    totalExpense = budget.totalExpense + diff, lastModified = System.currentTimeMillis()
+                )
             )
 
-            copy
+            expense.copy()
         }
 
     override suspend fun removeExpense(expense: Expense, reverseAmounts: Boolean) {
         db.runInTransaction {
-            val old = db.expenseDao.observeExpenseById(expense.id)
-                .first() ?: return@runInTransaction
+            val old = getExpenseById(expense.id) ?: return@runInTransaction
+            val category = getBudgetCategoryEntityById(expense.categoryId) ?: return@runInTransaction
+            val budget = getBudgetEntityById(expense.budgetId) ?: return@runInTransaction
 
             db.expenseDao.delete(expense.toEntity())
 
-            val category = db.budgetCategoryDao
-                .observeCategoryById(expense.categoryId)
-                .first() ?: return@runInTransaction
-
             db.budgetCategoryDao.update(
                 category.copy(
-                    totalExpense = category.totalExpense - old.amount
+                    totalExpense = category.totalExpense - old.amount, lastModified = System.currentTimeMillis()
                 )
             )
 
-            val budget = db.budgetDao
-                .observeBudgetById(expense.budgetId)
-                .first() ?: return@runInTransaction
-
             db.budgetDao.update(
                 budget.copy(
-                    totalExpense = budget.totalExpense - old.amount
+                    totalExpense = budget.totalExpense - old.amount, lastModified = System.currentTimeMillis()
                 )
             )
         }
     }
 
-    override suspend fun removeMultipleExpenses(expenses: List<Expense>, reverseAmounts: Boolean) =
-        db.runInTransaction {
+    override suspend fun removeMultipleExpenses(expenses: List<Expense>, reverseAmounts: Boolean) = db.runInTransaction {
             for (expense in expenses) {
                 removeExpense(expense, reverseAmounts)
             }
         }
+
+    private suspend fun getBudgetEntityById(id: Long): BudgetEntity? =
+        db.budgetDao.observeBudgetById(id).first()
+
+    private suspend fun getBudgetCategoryEntityById(id: Long): BudgetCategoryEntity? =
+        db.budgetCategoryDao.observeCategoryById(id).first()
+
+    private suspend fun getExpenseById(id: Long): ExpenseEntity? =
+        db.expenseDao.observeExpenseById(id).first()
 }
