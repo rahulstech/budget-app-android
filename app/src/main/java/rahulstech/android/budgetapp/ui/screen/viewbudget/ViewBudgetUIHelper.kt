@@ -2,7 +2,6 @@ package rahulstech.android.budgetapp.ui.screen.viewbudget
 
 import rahulstech.android.budgetapp.repository.model.Budget
 import rahulstech.android.budgetapp.repository.model.BudgetCategory
-import rahulstech.android.budgetapp.repository.model.Expense
 import rahulstech.android.budgetapp.ui.components.BudgetCategoryDialogState
 import rahulstech.android.budgetapp.ui.components.BudgetDialogState
 import rahulstech.android.budgetapp.ui.components.ExpenseDialogState
@@ -10,26 +9,14 @@ import rahulstech.android.budgetapp.ui.screen.UIState
 
 sealed interface ViewBudgetUIEvent {
 
-    data class EditBudgetEvent(val budget: Budget): ViewBudgetUIEvent
-
-    data class AddCategoryEvent(val category: BudgetCategory): ViewBudgetUIEvent
-
-    data class AddExpenseEvent(val expense: Expense): ViewBudgetUIEvent
-
     data class ShowAddExpenseDialogEvent(val category: BudgetCategory): ViewBudgetUIEvent
 
     data class ShowAddCategoryDialogEvent(val budget: Budget): ViewBudgetUIEvent
-
-    data class ShowEditBudgetDialogEvent(val budget: Budget): ViewBudgetUIEvent
-
-    data class ShowBudgetDetailsEvent(val budget: Budget): ViewBudgetUIEvent
 
     data class ViewExpensesEvent(
         val budgetId: Long,
         val categoryId: Long? = null
     ): ViewBudgetUIEvent
-
-    data class DeleteBudgetEvent(val budget: Budget): ViewBudgetUIEvent
 
     data class ShowCategoryOptionsEvent(val category: BudgetCategory): ViewBudgetUIEvent
 

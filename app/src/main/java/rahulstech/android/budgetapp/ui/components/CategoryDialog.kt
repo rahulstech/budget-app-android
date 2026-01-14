@@ -59,7 +59,6 @@ import rahulstech.android.budgetapp.repository.BudgetRepository
 import rahulstech.android.budgetapp.repository.model.Budget
 import rahulstech.android.budgetapp.repository.model.BudgetCategory
 import rahulstech.android.budgetapp.ui.screen.BUDGET_CATEGORY_PLACEHOLDER
-import rahulstech.android.budgetapp.ui.screen.BUDGET_PLACEHOLDER
 import rahulstech.android.budgetapp.ui.screen.UIState
 import javax.inject.Inject
 
@@ -73,36 +72,16 @@ data class BudgetCategoryDialogState(
     val budget: Budget? = null
 )
 
-class CategoryDialogStateManager(initialState: BudgetCategoryDialogState = BudgetCategoryDialogState()) {
-
-    private val _categoryDialogStateFlow = MutableStateFlow(initialState)
-    val categoryDialogStateFlow = _categoryDialogStateFlow.asStateFlow()
-
-    val categoryDialogState get() = _categoryDialogStateFlow.value
-
-    val showDialog: Boolean get() = _categoryDialogStateFlow.value.showDialog
-
-    fun updateSaving(isSaving: Boolean, category: BudgetCategory? = null) {
-        _categoryDialogStateFlow.value = if (null == category) {
-            _categoryDialogStateFlow.value.copy(isSaving = isSaving)
-        }
-        else {
-            _categoryDialogStateFlow.value.copy(isSaving = isSaving, category = category)
-        }
-    }
-
-    fun showDialog(budget: Budget = BUDGET_PLACEHOLDER, category: BudgetCategory? = null) {
-        _categoryDialogStateFlow.value = if (null == category) {
-            BudgetCategoryDialogState(showDialog = true, budget = budget)
-        }
-        else {
-            BudgetCategoryDialogState(showDialog = true, budget = budget, category = category)
-        }
-    }
-
-    fun hideDialog() {
-        _categoryDialogStateFlow.value = BudgetCategoryDialogState()
-    }
+@Composable
+fun DeleteCategoryWarningDialog(category: BudgetCategory,
+                                onDismiss: ()-> Unit,
+                                onClickDelete: (BudgetCategory)-> Unit)
+{
+    ConfirmationDialog(
+        onDismiss = onDismiss,
+        message = stringResource(R.string.message_warning_delete_budget_category, category.name),
+        actionConfirm = { onClickDelete(category) }
+    )
 }
 
 @Composable
@@ -189,13 +168,6 @@ fun CategoryDialog(categoryDialogState: BudgetCategoryDialogState,
                 OutlinedTextField(
                     value = allocation,
                     onValueChange = { allocation = it },
-                    // TODO: add currency symbol prefix
-                    prefix = {
-                        Icon(
-                            painterResource(R.drawable.baseline_currency_rupee_24),
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f))
-                    },
                     label = { Text(text = stringResource(R.string.label_allocation)) },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(
@@ -243,7 +215,7 @@ fun CategoryChooserDialog(budgetId: Long,
                     when(categoriesState) {
                         is UIState.Loading -> {
                             items(count = 10) {
-                                CategoryChooserDialogItemShimmer()
+                                CategoryChooserDialogItemPlaceholder()
                             }
                         }
                         is UIState.Success -> {
@@ -278,14 +250,14 @@ fun CategoryChooserDialog(budgetId: Long,
 }
 
 @Composable
-fun CategoryChooserDialogItemShimmer()
+fun CategoryChooserDialogItemPlaceholder()
 {
     Column(
         modifier = Modifier.fillMaxWidth(),
     ) {
         Box(
             modifier = Modifier.fillMaxWidth().height(56.dp)
-                .shimmer(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f))
+                .shimmer(MaterialTheme.colorScheme.inverseOnSurface.copy(alpha = 0.6f))
         )
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -333,7 +305,6 @@ class CategoryChooserViewModel @Inject constructor(val repo: BudgetRepository): 
         if (lastBudgetId == budgetId) {
             return
         }
-        Log.d(TAG, "loading categories of budget $budgetId")
         viewModelScope.launch {
             repo.observeBudgetCategoriesForBudget(budgetId)
                 .onStart { _categoriesState.value = UIState.Loading() }

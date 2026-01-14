@@ -92,7 +92,8 @@ class ViewExpensesViewModel @Inject constructor(val repo: BudgetRepository): Vie
         viewModelScope.launch {
             try {
                 updateEditExpenseDialog(true, expense)
-                repo.editExpense(expense)
+                val updatedExpense = repo.editExpense(expense)
+                Log.d(TAG, "save expense=$expense and updated expense=$updatedExpense")
                 hideEditExpenseDialog()
                 _effect.send(UISideEffect.ShowSnackBar(
                     UIText.StringResource(R.string.message_expense_save_successful))
@@ -155,7 +156,11 @@ class ViewExpensesViewModel @Inject constructor(val repo: BudgetRepository): Vie
     }
 
     fun showEditExpenseDialog(expense: Expense) {
-        _state.value = currentStateValue.copy(editExpenseDialog = ExpenseDialogState(showDialog = true, expense = expense))
+        _state.value = currentStateValue.copy(
+            editExpenseDialog = ExpenseDialogState(showDialog = true, expense = expense,
+                category = expense.category!!, canChooseCategory = false
+            )
+        )
     }
 
     fun hideEditExpenseDialog() {

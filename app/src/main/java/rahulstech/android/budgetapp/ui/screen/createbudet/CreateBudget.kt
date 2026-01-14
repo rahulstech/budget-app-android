@@ -1,6 +1,5 @@
 package rahulstech.android.budgetapp.ui.screen.createbudet
 
-import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -16,7 +15,6 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Clear
@@ -30,12 +28,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -49,97 +42,72 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import rahulstech.android.budgetapp.R
-import rahulstech.android.budgetapp.repository.model.Budget
 import rahulstech.android.budgetapp.repository.model.BudgetCategory
-import rahulstech.android.budgetapp.ui.components.BudgetCategoryDialogState
 import rahulstech.android.budgetapp.ui.components.CategoryDialog
+import rahulstech.android.budgetapp.ui.screen.IconValue
 import rahulstech.android.budgetapp.ui.screen.NavigationCallback
 import rahulstech.android.budgetapp.ui.screen.NavigationEvent
-import rahulstech.android.budgetapp.ui.screen.Screen
-import rahulstech.android.budgetapp.ui.screen.ScreenArgs
-import rahulstech.android.budgetapp.ui.screen.SnackBarAction
+import rahulstech.android.budgetapp.ui.screen.ScaffoldState
+import rahulstech.android.budgetapp.ui.screen.ScaffoldStateCallback
 import rahulstech.android.budgetapp.ui.screen.SnackBarCallback
 import rahulstech.android.budgetapp.ui.screen.SnackBarEvent
-import rahulstech.android.budgetapp.ui.screen.UIState
+import rahulstech.android.budgetapp.ui.screen.TopBarAction
+import rahulstech.android.budgetapp.ui.screen.UISideEffect
+import rahulstech.android.budgetapp.ui.screen.UIText
 import rahulstech.android.budgetapp.ui.theme.BudgetAppTheme
-import rahulstech.android.budgetapp.ui.theme.primaryTopAppBarColors
 
 private const val TAG = "CreateBudget"
 
 @Composable
-fun CreateBudgetRoute(snackBarCallback: SnackBarCallback,
-                      navigateTo: NavigationCallback,
+fun CreateBudgetRoute(scaffoldStateCallback: ScaffoldStateCallback,
+                      snackBarCallback: SnackBarCallback,
+                      navigateCallback: NavigationCallback,
                       viewModel: CreateBudgetViewModel = hiltViewModel())
 {
     val context = LocalContext.current
-    val categoryDialogState by viewModel.categoryDialogState.collectAsStateWithLifecycle()
-    val createBudgetUiState by viewModel.createBudgetUIState.collectAsStateWithLifecycle()
 
-    val budgetSaveState by viewModel.budgetSaveState.collectAsStateWithLifecycle(UIState.Idle())
-    LaunchedEffect(budgetSaveState) {
-        when(budgetSaveState) {
-            is UIState.Loading -> {
-                // TODO: implement loading state
+    LaunchedEffect(Unit) {
+        viewModel.effect.collect { effect ->
+            when(effect) {
+                is UISideEffect.ShowSnackBar -> {
+                    val message = when(effect.message) {
+                        is UIText.StringResource -> effect.message.resolveString(context)
+                        is UIText.PlainString -> effect.message.value
+                    }
+                    snackBarCallback(SnackBarEvent(message = message))
+                }
+                is UISideEffect.NavigateTo -> { navigateCallback(effect.event) }
+                is UISideEffect.ExitScreen -> {
+                    navigateCallback(NavigationEvent.Exit())
+                }
             }
-            is UIState.Success<Budget> -> {
-                val budget = (budgetSaveState as UIState.Success<Budget>).data
-                snackBarCallback(
-                    SnackBarEvent(
-                        message = context.getString(R.string.message_budget_save_success),
-                        duration = SnackbarDuration.Long,
-                        action = SnackBarAction(label = context.getString(R.string.label_ok))
-                    )
-                )
-                navigateTo(NavigationEvent.ForwardTo(
-                    screen = Screen.ViewBudget,
-                    args = ScreenArgs(budgetId = budget.id),
-                    popCurrent = true)
-                )
-            }
-            is UIState.Error -> {
-                Log.e(TAG, "create budget error", (budgetSaveState as UIState.Error).cause)
-                snackBarCallback(
-                    SnackBarEvent(
-                        message = context.getString(R.string.message_budget_save_error),
-                        duration = SnackbarDuration.Long,
-                        action = SnackBarAction(label = context.getString(R.string.label_ok))
-                    )
-                )
-            }
-            else -> {}
         }
     }
 
-    CreateBudgetScreen(
-        navigateTo = navigateTo,
-        onUIEvent = { event ->
-            when (event) {
-                is CreateBudgetUIEvent.AddBudgetEvent -> { viewModel.createBudget(event.budget) }
-                is CreateBudgetUIEvent.ShowCategoryDialogEvent -> {
-                    viewModel.categoryDialogStateManager.showDialog(category = event.category)
-                }
-                is CreateBudgetUIEvent.RemoveCategoryEvent -> {
-                    viewModel.removeCategory(event.category)
-                }
-                is CreateBudgetUIEvent.SaveCategoryEvent -> {
-                    viewModel.saveCategory(event.category)
-                }
-                is CreateBudgetUIEvent.BudgetUpdateEvent -> {
-                    viewModel.updateBudget(event.budget)
-                }
-            }
-        },
-        uiState = createBudgetUiState,
-    )
+    val uiState by viewModel.state.collectAsStateWithLifecycle()
 
-    if (categoryDialogState.showDialog) {
+    scaffoldStateCallback(ScaffoldState(
+        showNavUp = true,
+        title = stringResource(R.string.title_new_budget),
+        actions = listOf(
+            TopBarAction.IconAction(
+                icon = IconValue.VectorIcon(Icons.Default.Check),
+                enabled = uiState.canSave,
+                onClick = { viewModel.createBudget(uiState.prepareBudget()) },
+            )
+        )
+    ))
+
+    CreateBudgetScreen(uiState,viewModel::onUIEvent)
+
+    if (uiState.categoryDialog.showDialog) {
         CategoryDialog(
-            categoryDialogState = categoryDialogState,
+            categoryDialogState = uiState.categoryDialog,
             onClickSave = { category ->
-                viewModel.categoryDialogStateManager.hideDialog()
+                viewModel.hideCategoryDialog()
                 viewModel.saveCategory(category)
             },
-            onDismiss = { viewModel.categoryDialogStateManager.hideDialog() }
+            onDismiss = { viewModel.hideCategoryDialog() }
         )
     }
 }
@@ -147,75 +115,41 @@ fun CreateBudgetRoute(snackBarCallback: SnackBarCallback,
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreateBudgetScreen(uiState: CreateBudgetUIState,
-                       navigateTo: NavigationCallback = {},
                        onUIEvent: CreateBudgetUIEventCallback = {},
                        )
 {
     val budget = uiState.budget
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                colors = primaryTopAppBarColors(),
-                title = {
-                    Text(
-                        text = stringResource(R.string.title_new_budget),
-                        style = MaterialTheme.typography.headlineMedium,
-                    )
-                },
-                actions = {
-                    IconButton(
-                        enabled = !uiState.isSaving && uiState.canSave,
-                        onClick = {
-                            onUIEvent(
-                                CreateBudgetUIEvent.AddBudgetEvent(
-                                    budget.copy(categories = uiState.categories)
-                                )
-                            )
-                        }
-                    ) {
-                        Icon(Icons.Default.Check, stringResource(R.string.label_save))
-                    }
-                },
-                navigationIcon = {
-                    IconButton(onClick = { navigateTo(NavigationEvent.Exit()) }) {
-                        Icon( Icons.AutoMirrored.Default.ArrowBack, stringResource(R.string.message_navigate_up))
-                    }
-                }
+    LazyVerticalGrid (
+        columns = GridCells.Adaptive(minSize = 320.dp),
+        modifier = Modifier.fillMaxSize().padding(16.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        item(span = { GridItemSpan(maxLineSpan) }) {
+            BudgetSection(
+                name = budget.name,
+                onNameChanged = { onUIEvent(CreateBudgetUIEvent.BudgetUpdateEvent(budget.copy(name = it)) )},
+                details = uiState.budget.details,
+                onDetailsChanged = { onUIEvent(CreateBudgetUIEvent.BudgetUpdateEvent(budget.copy(details = it)) ) },
             )
         }
-    ) { innerPadding ->
-        LazyVerticalGrid (
-            columns = GridCells.Adaptive(minSize = 320.dp),
-            modifier = Modifier.fillMaxSize().padding(innerPadding).padding(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
+
+        item(span = { GridItemSpan(maxLineSpan) }) {
+            CategorySectionHeader { onUIEvent(CreateBudgetUIEvent.ShowCategoryDialogEvent()) }
+        }
+
+        if (uiState.categories.isEmpty()) {
             item(span = { GridItemSpan(maxLineSpan) }) {
-                BudgetSection(
-                    name = budget.name,
-                    onNameChanged = { onUIEvent(CreateBudgetUIEvent.BudgetUpdateEvent(budget.copy(name = it)) )},
-                    details = uiState.budget.details,
-                    onDetailsChanged = { onUIEvent(CreateBudgetUIEvent.BudgetUpdateEvent(budget.copy(details = it)) ) },
+                NoCategoriesComponent()
+            }
+        }
+        else {
+            items(items = uiState.categories, key = { it.id }) { category ->
+                CategoryItem(
+                    category = category,
+                    onClickRemove = { onUIEvent(CreateBudgetUIEvent.RemoveCategoryEvent(it)) },
+                    onClickEdit = { onUIEvent(CreateBudgetUIEvent.ShowCategoryDialogEvent(category = it)) }
                 )
-            }
-
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                CategorySectionHeader(onUIEvent = onUIEvent)
-            }
-
-            if (uiState.categories.isEmpty()) {
-                item(span = { GridItemSpan(maxLineSpan) }) {
-                    NoCategoriesComponent()
-                }
-            }
-            else {
-                items(items = uiState.categories, key = { it.id }) { category ->
-                    CategoryItem(
-                        category = category,
-                        onClickRemove = { onUIEvent(CreateBudgetUIEvent.RemoveCategoryEvent(it)) },
-                        onClickEdit = { onUIEvent(CreateBudgetUIEvent.ShowCategoryDialogEvent(category = it, isEditMode = true)) }
-                    )
-                }
             }
         }
     }
@@ -263,7 +197,7 @@ fun BudgetSection(name: String,
 }
 
 @Composable
-fun CategorySectionHeader(onUIEvent: CreateBudgetUIEventCallback) {
+fun CategorySectionHeader(onAddCategory: ()-> Unit) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -277,7 +211,7 @@ fun CategorySectionHeader(onUIEvent: CreateBudgetUIEventCallback) {
         Spacer(modifier = Modifier.width(12.dp))
 
         // add category
-        FilledTonalIconButton (onClick = { onUIEvent(CreateBudgetUIEvent.ShowCategoryDialogEvent()) }) {
+        FilledTonalIconButton (onClick = onAddCategory) {
             Icon(imageVector = Icons.Default.Add, contentDescription = null)
         }
     }
@@ -308,6 +242,9 @@ fun CategoryItem(category: BudgetCategory,
                  onClickEdit: (BudgetCategory)-> Unit)
 {
     Card(
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.background
+        ),
         modifier = Modifier.width(280.dp),
         shape = RoundedCornerShape(size = 20.dp),
         elevation = CardDefaults.cardElevation(4.dp)

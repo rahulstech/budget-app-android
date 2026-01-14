@@ -29,16 +29,6 @@ fun defaultExpenseProgressColorProvider(progress: Float): Color = when{
 }
 
 @Composable
-fun defaultExpenseProgressExpenseColorProvider(progress: Float,
-                                               progressColor: (Float) -> Color = { defaultExpenseProgressColorProvider(it)}
-                                               ): Color =
-    when {
-        progress == 0f -> LocalTextStyle.current.color
-        else -> progressColor(progress)
-    }
-
-
-@Composable
 fun ExpenseLinearProgress(expense: Double,
                           allocation: Double,
                           progressColorCallback: (Float)-> Color = { defaultExpenseProgressColorProvider(it) },

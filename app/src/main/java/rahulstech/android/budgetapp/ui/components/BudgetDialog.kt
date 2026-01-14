@@ -174,36 +174,9 @@ fun DeleteBudgetWarningDialog(budget: Budget,
                               onDismiss: ()-> Unit,
                               onClickDelete: (Budget)-> Unit)
 {
-    BasicAlertDialog(
-        onDismissRequest = onDismiss
-    ) {
-        Surface(
-            modifier = Modifier.clip(shape = RoundedCornerShape(16.dp)),
-        ) {
-            Column(
-                modifier = Modifier.wrapContentSize().padding(16.dp)
-            ) {
-                Text(text = stringResource(R.string.title_delete_budget), style = MaterialTheme.typography.titleLarge)
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Text(text = stringResource(R.string.message_warning_delete_budget))
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End)
-                ) {
-                    // yes
-                    TextButton(onClick = { onClickDelete(budget) }) { Text(stringResource(R.string.label_yes))}
-
-                    // no
-                    TextButton(onClick = onDismiss) { Text(stringResource(R.string.label_no)) }
-                }
-            }
-        }
-    }
+    ConfirmationDialog(
+        onDismiss = onDismiss,
+        message = stringResource(R.string.message_warning_delete_budget, budget.name),
+        actionConfirm = { onClickDelete(budget) },
+    )
 }

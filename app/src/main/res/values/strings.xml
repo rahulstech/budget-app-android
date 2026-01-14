@@ -19,6 +19,7 @@
     <string name="label_view_budget_category_expenses">View Expenses</string>
     <string name="label_create_budget">Create Budget</string>
     <string name="label_add">Add</string>
+    <string name="label_confirm">Confirm</string>
     <string name="label_cancel">Cancel</string>
     <string name="label_save">Save</string>
     <string name="label_ok">OK</string>
@@ -54,6 +55,7 @@
     <string name="message_delete_budget">delete budget</string>
     <string name="message_add_at_least_one_category">add at least category</string>
     <string name="message_add_expense">add expense</string>
+    <string name="message_view_expenses">view expenses</string>
     <string name="message_show_more_options">show more options</string>
 
     <string name="message_budget_save_success">Budget saved</string>

@@ -69,7 +69,6 @@ class ViewBudgetViewModel @Inject constructor(val repo: BudgetRepository): ViewM
                     updateBudgetAndCategories(UIState.Error(it), UIState.Idle())
                 }
                 .collectLatest { budget ->
-                    Log.i(TAG, "budget refreshed")
                     if (null == budget) {
                         updateBudgetAndCategories(UIState.NotFound(), UIState.NotFound())
                     }
@@ -94,7 +93,6 @@ class ViewBudgetViewModel @Inject constructor(val repo: BudgetRepository): ViewM
                     updateBudgetAndCategories(categoryState = UIState.Error(it))
                 }
                 .collectLatest { categories ->
-                    Log.i(TAG, "categories refreshed")
                     if (categories.isEmpty()) {
                         updateBudgetAndCategories(categoryState = UIState.NotFound())
                     }
@@ -123,6 +121,7 @@ class ViewBudgetViewModel @Inject constructor(val repo: BudgetRepository): ViewM
     fun editBudget(budget: Budget) {
         viewModelScope.launch {
             try {
+                updateEditBudgetDialog(true, budget)
                 repo.editBudget(budget)
                 hideEditBudgetDialog()
                 _effect.send(UISideEffect.ShowSnackBar(UIText.StringResource(R.string.message_budget_save_success)))
@@ -205,24 +204,13 @@ class ViewBudgetViewModel @Inject constructor(val repo: BudgetRepository): ViewM
     // ui event handler
     fun onUIEvent(event: ViewBudgetUIEvent) {
         when(event) {
-            is ViewBudgetUIEvent.ShowEditBudgetDialogEvent -> {
-                showEditBudgetDialog(event.budget)
-            }
-            is ViewBudgetUIEvent.EditBudgetEvent -> {
-                editBudget(event.budget)
-            }
-
             is ViewBudgetUIEvent.ShowAddCategoryDialogEvent -> {
                 showAddCategoryDialog(event.budget)
-            }
-            is ViewBudgetUIEvent.AddCategoryEvent -> {
-                addCategory(event.category)
             }
 
             is ViewBudgetUIEvent.ShowAddExpenseDialogEvent -> {
                 showAddExpenseDialog(budgetId, event.category)
             }
-            is ViewBudgetUIEvent.AddExpenseEvent -> { addExpense(event.expense) }
 
             is ViewBudgetUIEvent.ViewExpensesEvent -> {
                 viewModelScope.launch {
@@ -230,25 +218,15 @@ class ViewBudgetViewModel @Inject constructor(val repo: BudgetRepository): ViewM
                 }
             }
 
-            is ViewBudgetUIEvent.DeleteBudgetEvent -> {
-                showDeleteBudgetDialog(event.budget)
-            }
-
             is ViewBudgetUIEvent.ShowCategoryOptionsEvent -> {
                 showCategoryOptionsDialog(event.category)
             }
 
-            is ViewBudgetUIEvent.ShowBudgetDetailsEvent -> {
-                showBudgetDetailsDialog(event.budget)
-            }
-
             is ViewBudgetUIEvent.ShowEditCategoryDialogEvent -> {
                 showEditCategoryDialog(event.category)
-                hideCategoryOptionsDialog()
             }
 
             is ViewBudgetUIEvent.ShowDeleteCategoryDialogEvent -> {
-                hideCategoryOptionsDialog()
                 showDeleteCategoryDialog(event.category)
             }
         }
@@ -272,9 +250,12 @@ class ViewBudgetViewModel @Inject constructor(val repo: BudgetRepository): ViewM
         _state.value = _state.value.copy(addCategoryDialog = current.copy(isSaving = isSaving, category = category))
     }
 
-    fun showAddExpenseDialog(budgetId: Long, category: BudgetCategory = BUDGET_CATEGORY_PLACEHOLDER) {
-        val dialogState = ExpenseDialogState(showDialog = true, budgetId = budgetId, category = category )
-        _state.value = _state.value.copy(addExpenseDialog = dialogState)
+    fun showAddExpenseDialog(budgetId: Long, category: BudgetCategory) {
+        _state.value = _state.value.copy(
+            addExpenseDialog = ExpenseDialogState(
+                showDialog = true, budgetId = budgetId, category = category, canChooseCategory = false
+            )
+        )
     }
 
     fun hideAddExpenseDialog() {

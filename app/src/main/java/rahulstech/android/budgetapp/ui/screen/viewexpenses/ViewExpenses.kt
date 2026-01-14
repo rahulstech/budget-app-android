@@ -11,28 +11,16 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material3.BasicAlertDialog
-import androidx.compose.material3.ExtendedFloatingActionButton
-import androidx.compose.material3.FabPosition
+import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -52,15 +40,21 @@ import rahulstech.android.budgetapp.R
 import rahulstech.android.budgetapp.repository.ExpenseFilterParams
 import rahulstech.android.budgetapp.repository.model.BudgetCategory
 import rahulstech.android.budgetapp.repository.model.Expense
+import rahulstech.android.budgetapp.ui.components.ConfirmationDialog
 import rahulstech.android.budgetapp.ui.components.ExpenseDialog
+import rahulstech.android.budgetapp.ui.components.OptionItem
+import rahulstech.android.budgetapp.ui.components.OptionsDialog
 import rahulstech.android.budgetapp.ui.components.shimmer
+import rahulstech.android.budgetapp.ui.screen.FAB
+import rahulstech.android.budgetapp.ui.screen.IconValue
 import rahulstech.android.budgetapp.ui.screen.NavigationCallback
 import rahulstech.android.budgetapp.ui.screen.NavigationEvent
+import rahulstech.android.budgetapp.ui.screen.ScaffoldState
+import rahulstech.android.budgetapp.ui.screen.ScaffoldStateCallback
 import rahulstech.android.budgetapp.ui.screen.SnackBarCallback
 import rahulstech.android.budgetapp.ui.screen.SnackBarEvent
 import rahulstech.android.budgetapp.ui.screen.UISideEffect
 import rahulstech.android.budgetapp.ui.screen.UIText
-import rahulstech.android.budgetapp.ui.theme.primaryTopAppBarColors
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -71,8 +65,9 @@ private val EXPENSE_DATE_FORMAT = DateTimeFormatter.ofPattern("EEEE, dd-MMMM-yyy
 @Composable
 fun ViewExpensesRoute(budgetId: Long,
                       categoryId: Long? = null,
+                      scaffoldStateCallback: ScaffoldStateCallback,
                       snackBarCallback: SnackBarCallback,
-                      navigateTo: NavigationCallback,
+                      navigationCallback: NavigationCallback,
                       viewModel: ViewExpensesViewModel = hiltViewModel())
 {
     val context = LocalContext.current
@@ -95,20 +90,28 @@ fun ViewExpensesRoute(budgetId: Long,
                     snackBarCallback(SnackBarEvent(message = message))
                 }
                 is UISideEffect.NavigateTo -> {
-                    navigateTo(effect.event)
+                    navigationCallback(effect.event)
                 }
                 is UISideEffect.ExitScreen -> {
-                    navigateTo(NavigationEvent.Exit())
+                    navigationCallback(NavigationEvent.Exit())
                 }
             }
         }
     }
 
+    scaffoldStateCallback(ScaffoldState(
+        showNavUp = true,
+        title = stringResource(R.string.title_view_expenses),
+        floatingActionButton = FAB.IconAndText(
+            icon = IconValue.VectorIcon(Icons.Default.Add),
+            label = stringResource(R.string.label_add_expense),
+            onClick = { viewModel.showAddExpenseDialog(budgetId) }
+        )
+    ))
+
     val expenses = viewModel.expenses.collectAsLazyPagingItems()
     ViewExpensesScreen(
         expenses = expenses,
-        navigateTo = navigateTo,
-        onClickAddExpense = { viewModel.showAddExpenseDialog(budgetId) },
         onUIEvent = viewModel::onUIEvent,
     )
 
@@ -155,108 +158,65 @@ fun ViewExpensesRoute(budgetId: Long,
 
 @Composable
 fun ViewExpensesScreen(expenses: LazyPagingItems<ExpenseListItem>,
-                       navigateTo: NavigationCallback = {},
-                       onClickAddExpense: ()-> Unit = {},
                        onUIEvent: ViewExpenseUIEventCallback = {}
                        )
 {
-    Scaffold(
-        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-        topBar = {
-            TopAppBar(
-                colors = primaryTopAppBarColors(),
-                title = {
-                    Text(
-                        text = stringResource(R.string.title_view_expenses),
-                        style = MaterialTheme.typography.headlineSmall
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = { navigateTo(NavigationEvent.Exit()) }) {
-                        Icon(Icons.AutoMirrored.Default.ArrowBack,
-                            contentDescription = stringResource(R.string.message_navigate_up)
-                        )
-                    }
-                },
-            )
-        },
-        floatingActionButton = {
-            ExtendedFloatingActionButton(
-                containerColor = MaterialTheme.colorScheme.primary,
-                shape = RoundedCornerShape(percent = 50),
-                onClick = onClickAddExpense
-            ) {
-                Icon(Icons.Default.Add, null)
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Top,
+    ) {
 
-                Spacer(modifier = Modifier.width(8.dp))
-
-                Text(stringResource(R.string.label_add_expense))
-            }
-        },
-        floatingActionButtonPosition = FabPosition.Center
-    ) { innerPadding ->
-        Box(
-            modifier = Modifier.fillMaxSize().padding(innerPadding),
-            contentAlignment = Alignment.Center,
-        ) {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Top,
-            ) {
-
-                when(expenses.loadState.prepend) {
-                    is LoadState.Loading -> {
-                        item {
-                            PlaceholderItem()
-                        }
-                    }
-                    else -> {}
-                }
-
-                when(expenses.loadState.refresh) {
-                    is LoadState.Loading -> {
-                        items(count = 10) {
-                            PlaceholderItem()
-                        }
-                    }
-                    is LoadState.Error -> {}
-                    is LoadState.NotLoading -> {
-                        if (expenses.itemCount == 0) {
-                            item {
-                                EmptyView()
-                            }
-                        }
-                        else {
-                            items(count = expenses.itemCount, key = { index -> expenses[index]!!.key }) { index ->
-                                when(val item = expenses[index]) {
-                                    is ExpenseListItem.ItemHeader -> {
-                                        ExpenseHeader(item.date)
-                                    }
-                                    is ExpenseListItem.ItemExpense -> {
-                                        ExpenseItem(
-                                            item.value,
-                                            onClickOptions = {
-                                                onUIEvent(ViewExpenseUIEvent.ShowExpenseOptionsDialogEvent(item.value))
-                                            }
-                                        )
-                                    }
-                                    else -> {}
-                                }
-                            }
-                        }
-                    }
-                }
-
-                when(expenses.loadState.append) {
-                    is LoadState.Loading -> {
-                        item {
-                            PlaceholderItem()
-                        }
-                    }
-                    else -> {}
+        when(expenses.loadState.prepend) {
+            is LoadState.Loading -> {
+                item {
+                    ExpenseItemPlaceholder()
                 }
             }
+            else -> {}
+        }
+
+        when(expenses.loadState.refresh) {
+            is LoadState.Loading -> {
+                items(count = 10) {
+                    ExpenseItemPlaceholder()
+                }
+            }
+            is LoadState.Error -> {}
+            is LoadState.NotLoading -> {
+                if (expenses.itemCount == 0) {
+                    item {
+                        EmptyView()
+                    }
+                }
+                else {
+                    items(count = expenses.itemCount, key = { index -> expenses[index]!!.key }) { index ->
+                        when(val item = expenses[index]) {
+                            is ExpenseListItem.ItemHeader -> {
+                                ExpenseHeader(item.date)
+                            }
+                            is ExpenseListItem.ItemExpense -> {
+                                ExpenseItem(
+                                    item.value,
+                                    onClickOptions = {
+                                        onUIEvent(ViewExpenseUIEvent.ShowExpenseOptionsDialogEvent(item.value))
+                                    }
+                                )
+                            }
+                            else -> {}
+                        }
+                    }
+                }
+            }
+        }
+
+        when(expenses.loadState.append) {
+            is LoadState.Loading -> {
+                item {
+                    ExpenseItemPlaceholder()
+                }
+            }
+            else -> {}
         }
     }
 }
@@ -289,35 +249,38 @@ fun ExpenseItem(expense: Expense, onClickOptions: (Expense)-> Unit) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Text(
-                modifier = Modifier.fillMaxWidth().weight(1f),
-                text = expense.amount.toString(),
-                style = MaterialTheme.typography.titleLarge,
-            )
+            Column(
+                modifier = Modifier.fillMaxWidth().weight(1f)
+            ) {
+                Text(
+                    modifier = Modifier.fillMaxWidth(),
+                    text = expense.amount.toString(),
+                    style = MaterialTheme.typography.titleMedium,
+                )
 
-            IconButton(onClick = { onClickOptions(expense) }) {
+                if (expense.note.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    Text(
+                        text = expense.note,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+            }
+
+            FilledTonalIconButton (onClick = { onClickOptions(expense) }) {
                 Icon(Icons.Default.MoreVert, stringResource(R.string.message_show_more_options))
             }
-        }
-
-        if (expense.note.isNotBlank()) {
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Text(
-                text = expense.note,
-                style = MaterialTheme.typography.bodyMedium,
-            )
         }
 
         Spacer(modifier = Modifier.height(12.dp))
 
         Text(
-            modifier = Modifier.clip(shape = MaterialTheme.shapes.extraLarge).background(MaterialTheme.colorScheme.secondaryContainer)
-
-                .padding(horizontal = 12.dp, vertical = 8.dp)
-                ,
+            modifier = Modifier.clip(shape = MaterialTheme.shapes.extraLarge)
+                .background(MaterialTheme.colorScheme.secondaryContainer)
+                .padding(horizontal = 8.dp, vertical = 4.dp),
             text = expense.category!!.name,
+            style = MaterialTheme.typography.labelSmall
         )
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -327,7 +290,7 @@ fun ExpenseItem(expense: Expense, onClickOptions: (Expense)-> Unit) {
 }
 
 @Composable
-fun PlaceholderItem() {
+fun ExpenseItemPlaceholder() {
     Row (modifier = Modifier.fillMaxWidth().height(88.dp)) {
         Box(modifier = Modifier.fillMaxWidth().height(88.dp).shimmer())
 
@@ -347,37 +310,17 @@ fun EmptyView() {
 
 @Composable
 fun ExpenseOptionDialog(expense: Expense,
-                         onDismiss: ()-> Unit,
-                        onUIEvent: ViewExpenseUIEventCallback
-                         )
+                        onDismiss: ()-> Unit,
+                        onUIEvent: ViewExpenseUIEventCallback,
+                        )
 {
-    ModalBottomSheet(onDismissRequest = onDismiss) {
-        Surface(
-            tonalElevation = 0.dp,
-            shape = MaterialTheme.shapes.medium,
-        ) {
-            Column(
-                modifier = Modifier.fillMaxWidth()
-                    .padding(start = 16.dp, end = 16.dp, top = 24.dp, bottom = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                // edit
-                TextButton(modifier = Modifier.fillMaxWidth().height(56.dp),
-                    onClick = { onUIEvent(ViewExpenseUIEvent.ShowEditExpenseDialogEvent(expense)) },
-
-                    ) {
-                    Text(stringResource(R.string.label_edit), style = MaterialTheme.typography.bodyLarge)
-                }
-
-                // delete
-                TextButton(modifier = Modifier.fillMaxWidth().height(56.dp),
-                    onClick = { onUIEvent(ViewExpenseUIEvent.ShowDeleteExpenseDialogEvent(expense)) },
-                ) {
-                    Text(stringResource(R.string.label_delete), style = MaterialTheme.typography.bodyLarge)
-                }
-            }
-        }
-    }
+    OptionsDialog(
+        onDismiss = onDismiss,
+        options = arrayOf(
+            OptionItem(stringResource(R.string.label_edit), { onUIEvent(ViewExpenseUIEvent.ShowEditExpenseDialogEvent(expense)) }),
+            OptionItem(stringResource(R.string.label_delete), { onUIEvent(ViewExpenseUIEvent.ShowDeleteExpenseDialogEvent(expense))})
+        )
+    )
 }
 
 @Composable
@@ -385,44 +328,18 @@ fun DeleteExpenseWarningDialog(expense: Expense,
                                onDismiss: ()-> Unit,
                                onClickDelete: (Expense)-> Unit)
 {
-    BasicAlertDialog(
-        onDismissRequest = onDismiss
-    ) {
-        Surface(
-            modifier = Modifier.clip(MaterialTheme.shapes.large),
-        ) {
-            Column(
-                modifier = Modifier.wrapContentSize().padding(16.dp)
-            ) {
-                Text(text = stringResource(R.string.title_delete_expense), style = MaterialTheme.typography.titleLarge)
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Text(text = stringResource(R.string.message_warning_delete_expense))
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End)
-                ) {
-                    // yes
-                    TextButton(onClick = { onClickDelete(expense) }) { Text(stringResource(R.string.label_yes))}
-
-                    // no
-                    TextButton(onClick = onDismiss) { Text(stringResource(R.string.label_no)) }
-                }
-            }
-        }
-    }
+    ConfirmationDialog(
+        onDismiss = onDismiss,
+        title = stringResource(R.string.title_delete_expense),
+        message = stringResource(R.string.message_warning_delete_expense),
+        actionConfirmLabel = stringResource(R.string.label_yes),
+        actionConfirm = { onClickDelete(expense) },
+        actionCancelLabel = stringResource(R.string.label_no)
+    )
 }
 
 
-@Preview(
-    showBackground = true
-)
+@Preview(showBackground = true)
 @Composable
 fun ExpenseItemPreview() {
     ExpenseItem(

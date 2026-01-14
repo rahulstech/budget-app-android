@@ -1,6 +1,5 @@
 package rahulstech.android.budgetapp.ui.screen.viewexpenses
 
-import androidx.paging.PagingData
 import rahulstech.android.budgetapp.repository.model.Expense
 import rahulstech.android.budgetapp.ui.components.ExpenseDialogState
 
