@@ -61,11 +61,16 @@ dependencies {
     implementation libs.androidx.compose.material3
     implementation libs.androidx.compose.navigation
     implementation libs.paging.compose
+    // google fonts
+    implementation libs.androidx.compose.google.fonts
     // jetpack compose test
     androidTestImplementation platform(libs.androidx.compose.bom)
     androidTestImplementation libs.androidx.compose.ui.test.junit4
     debugImplementation libs.androidx.compose.ui.tooling
     debugImplementation libs.androidx.compose.ui.test.manifest
+
+    // splash screen
+    implementation libs.splashscreen
 
     // hilt
     implementation libs.hilt.android

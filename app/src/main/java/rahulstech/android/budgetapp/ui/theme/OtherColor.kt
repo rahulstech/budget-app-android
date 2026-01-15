@@ -6,13 +6,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.TopAppBarColors
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
 
-val ColorProgressSafe = Color(0xFF399918)
+val ColorProgressSafe = progressSafeLight
 
-val ColorProgressWarning = Color(0xFFE1AA36)
+val ColorProgressWarning = progressWarningLight
 
-val ColorProgressDanger = Color(0xFFFF4646)
+val ColorProgressDanger = progressDangerLight
 
 @Composable
 fun tileColors(): CardColors =

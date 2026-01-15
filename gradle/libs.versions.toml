@@ -47,6 +47,12 @@ androidx-compose-material3 = { group = "androidx.compose.material3", name = "mat
 # compose navigation
 androidx-compose-navigation = { group = "androidx.navigation", name = "navigation-compose", version.ref = "composeNavigation" }
 
+# compose google font
+androidx-compose-google-fonts = { group = "androidx.compose.ui", name = "ui-text-google-fonts", version = "1.6.0" }
+
+# splash screen
+splashscreen={ group = "androidx.core", name = "core-splashscreen", version="1.2.0"}
+
 # room
 room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
 room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }

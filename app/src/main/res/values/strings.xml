@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">BudgetApp</string>
+    <string name="app_name">Budgetify</string>
 
 
     <string name="label_budget_name">Name</string>

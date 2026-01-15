@@ -329,7 +329,7 @@ fun CategoriesHeader(onClickAddCategory: ()-> Unit)
             style = MaterialTheme.typography.titleLarge
         )
 
-        IconButton(onClick = onClickAddCategory) {
+        FilledTonalIconButton(onClick = onClickAddCategory) {
             Icon(imageVector = Icons.Default.Add, contentDescription = null)
         }
     }
