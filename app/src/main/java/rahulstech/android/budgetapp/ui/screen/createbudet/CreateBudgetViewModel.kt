@@ -94,7 +94,7 @@ class CreateBudgetViewModel @Inject constructor(val repo: BudgetRepository): Vie
         if (category.id == 0L) {
             // save new
             _state.value = currentState.copy(
-                categories = categories + category.copy(id = lastCategoryId++)
+                categories = categories + category.copy(id = ++lastCategoryId)
             )
         }
         else {

@@ -236,6 +236,7 @@ fun NoCategoriesComponent() {
         )
     }
 }
+
 @Composable
 fun CategoryItem(category: BudgetCategory,
                  onClickRemove: (BudgetCategory)-> Unit,
